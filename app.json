@@ -2,7 +2,7 @@
   "expo": {
     "name": "SnapSpot",
     "slug": "snapspot",
-    "version": "1.2.6",
+    "version": "1.4.9",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "splash": {
@@ -12,7 +12,7 @@
     },
     "updates": {
       "fallbackToCacheTimeout": 0,
-      "url": "https://u.expo.dev/fbdb00e5-1b93-4f83-a446-6f076ee4fb75"
+      "url": "https://u.expo.dev/2ca46419-ba28-46dc-81b7-e4a5215ffcf4"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -26,6 +26,11 @@
       "bundleIdentifier": "com.SnapSpot.app"
     },
     "android": {
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyAdPUePDEdtyX6tEH6c6JkQTrP6fsHPnoE"
+        }
+      },
       "permissions": [
         "CAMERA",
         "RECORD_AUDIO",
@@ -48,8 +53,11 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "runtimeVersion": {
-      "policy": "appVersion"
+    "runtimeVersion": "1.0.0",
+    "extra": {
+      "eas": {
+        "projectId": "2ca46419-ba28-46dc-81b7-e4a5215ffcf4"
+      }
     }
   }
 }

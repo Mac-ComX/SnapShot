@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
-import { collection, onSnapshot } from 'firebase/firestore';
+import React, { useEffect, useState, useCallback } from 'react';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, RefreshControl } from 'react-native';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { useNavigation } from '@react-navigation/native';
 import { db } from '../services/firebase';
 
@@ -8,34 +8,51 @@ export default function ListeRuesScreen({ route }) {
   const { ville } = route.params;  // Récupérer la ville depuis les paramètres de navigation
   const [rues, setRues] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false); // État pour le rafraîchissement
   const navigation = useNavigation();
 
-  // Charger les rues de la ville sélectionnée
-  useEffect(() => {
-    const fetchRues = async () => {
-      try {
-        const unsubscribe = onSnapshot(collection(db, 'decorations'), (snapshot) => {
-          const ruesSet = new Set();
-          snapshot.forEach(doc => {
-            const data = doc.data();
-            if (data.ville === ville && data.rue) {
-              ruesSet.add(data.rue);  // Ajouter la rue si elle appartient à la ville
-            }
-          });
-          setRues(Array.from(ruesSet));  // Convertir en tableau pour supprimer les doublons
-          setLoading(false);
-        });
-        return () => unsubscribe();
-      } catch (error) {
-        console.error('Erreur lors de la récupération des rues :', error);
-        Alert.alert('Erreur', 'Impossible de récupérer les rues.');
-        setLoading(false);
-      }
-    };
-    fetchRues();
+  // Fonction pour récupérer les données depuis Firestore
+  const fetchRues = useCallback(async () => {
+    try {
+      setLoading(true); // Optionnel : vous pouvez laisser ou retirer cette ligne pour le spinner initial
+      const decorationsQuery = query(
+        collection(db, 'decorations'),
+        where('ville', '==', ville),
+        where('functionalityStatus', '==', 'Fonctionnelle')
+      );
+      const querySnapshot = await getDocs(decorationsQuery);
+      const ruesSet = new Set();
+
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        if (data.rue) {
+          ruesSet.add(data.rue);  // Ajouter la rue si elle est disponible et fonctionnelle
+        }
+      });
+
+      const sortedRues = Array.from(ruesSet).sort();  // Convertir en tableau et trier par ordre alphabétique
+      setRues(sortedRues);
+    } catch (error) {
+      console.error('Erreur lors de la récupération des rues :', error);
+      Alert.alert('Erreur', 'Impossible de récupérer les rues.');
+    } finally {
+      setLoading(false); // Fin du chargement
+      setRefreshing(false); // Fin du rafraîchissement
+    }
   }, [ville]);
 
-  if (loading) {
+  // Charger les données au montage du composant
+  useEffect(() => {
+    fetchRues();
+  }, [fetchRues]);
+
+  // Fonction de rafraîchissement pour le pull-to-refresh
+  const onRefresh = useCallback(() => {
+    setRefreshing(true); // Déclenche le rafraîchissement
+    fetchRues(); // Recharger les données
+  }, [fetchRues]);
+
+  if (loading && !refreshing) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#0000ff" />
@@ -54,7 +71,7 @@ export default function ListeRuesScreen({ route }) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Sélectionnez une rue dans {ville} :</Text>
+      <Text style={styles.title}>Sélectionnez une rue de {ville} :</Text>
       <FlatList
         data={rues}
         keyExtractor={(item) => item}  // Utiliser le nom de la rue comme clé
@@ -66,6 +83,12 @@ export default function ListeRuesScreen({ route }) {
             <Text style={styles.streetText}>{item}</Text>
           </TouchableOpacity>
         )}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}  // Contrôler l'état de rafraîchissement
+            onRefresh={onRefresh}    // Fonction pour rafraîchir la liste
+          />
+        }
       />
     </View>
   );
@@ -82,14 +105,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 20,
     textAlign: 'center',
   },
   streetButton: {
     padding: 15,
-    backgroundColor: '#ffa500',
+    backgroundColor: '#66b08d',
     marginVertical: 10,
     borderRadius: 10,
   },

@@ -11,14 +11,11 @@ const useFirestoreData = (collectionName, filters = [], listen = true) => {
 
   useEffect(() => {
     const collectionRef = collection(db, collectionName);
-    let q = collectionRef;
-
-    // Appliquer les filtres si présents
-    if (filters.length > 0) {
-      filters.forEach((filter) => {
-        q = query(q, where(filter.field, filter.operator, filter.value));
-      });
-    }
+    
+    // Appliquer les filtres combinés dans une seule requête
+    const q = filters.length > 0 
+      ? query(collectionRef, ...filters.map(filter => where(filter.field, filter.operator, filter.value)))
+      : collectionRef;
 
     const unsubscribe = listen
       ? onSnapshot(
