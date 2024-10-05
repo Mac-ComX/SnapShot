@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, RefreshControl } from 'react-native';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { useNavigation } from '@react-navigation/native';
-import { db } from '../services/firebase';
+import { db } from '../../services/firebase';
 
 export default function ListeRuesScreen({ route }) {
   const { ville } = route.params;  // Récupérer la ville depuis les paramètres de navigation

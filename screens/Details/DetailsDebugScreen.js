@@ -34,9 +34,9 @@ import {
   arrayUnion 
 } from 'firebase/firestore';
 import { useNavigation } from '@react-navigation/native';
-import { db } from '../services/firebase';
+import { db } from '../../services/firebase';
 import { Keyboard, TouchableWithoutFeedback } from 'react-native';
-import PublicImage from '../components/PublicImage';
+import PublicImage from '../../components/PublicImage';
 
 export default function DetailsScreen({ route }) {
   const { photo } = route.params;

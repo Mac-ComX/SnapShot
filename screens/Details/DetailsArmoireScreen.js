@@ -32,8 +32,8 @@ import {
   arrayUnion 
 } from 'firebase/firestore';
 import { useNavigation } from '@react-navigation/native';
-import { db } from '../services/firebase';
-import PublicImage from '../components/PublicImage';
+import { db } from '../../services/firebase';
+import PublicImage from '../../components/PublicImage';
 
 export default function DetailsArmoireScreen({ route }) {
   const { armoire } = route.params;

@@ -5,7 +5,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import * as FileSystem from 'expo-file-system';
 import { addDoc, collection } from 'firebase/firestore';
 import { useNavigation } from '@react-navigation/native';
-import { db } from '../services/firebase';
+import { db } from '../../services/firebase';
 
 export default function PreviewMaintScreen({ route }) {
   const { capturedPhotoUri, photo } = route.params;

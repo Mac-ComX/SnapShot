@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Image, Button, Alert } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { db, storage } from '../services/firebase';  // Assure-toi d'importer correctement Firebase
+import { db, storage } from '../../services/firebase';  // Assure-toi d'importer correctement Firebase
 import { collection, addDoc } from 'firebase/firestore';  // Pour Firestore
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';  // Pour Firebase Storage
 

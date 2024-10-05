@@ -6,24 +6,24 @@ import { createDrawerNavigator, DrawerContentScrollView, DrawerItemList } from '
 import { createStackNavigator } from '@react-navigation/stack';
 import Icon from 'react-native-vector-icons/Ionicons';
 import MapScreen from './screens/MapScreen';
-import CameraScreen from './screens/CameraScreen';
-import PreviewScreen from './screens/PreviewScreen';
-import ListeAnneesScreen from './screens/ListeAnneesScreen'; 
-import ListeVillesScreen from './screens/ListeVillesScreen'; 
-import ListeRuesScreen from './screens/ListeRuesScreen'; 
+import CameraScreen from './screens/previews/CameraScreen';
+import PreviewScreen from './screens/previews/PreviewScreen';
+import ListeAnneesScreen from './screens/Listes/ListeAnneesScreen'; 
+import ListeVillesScreen from './screens/Listes/ListeVillesScreen'; 
+import ListeRuesScreen from './screens/Listes/ListeRuesScreen'; 
 import PhotosRueScreen from './screens/PhotosRueScreen'; 
 import FormScreen from './screens/FormScreen'; 
-import DetailsScreen from './screens/DetailsScreen'; 
-import CameraAddPhotoScreen from './screens/CameraAddPhotoScreen';
-import PreviewAddiScreen from './screens/PreviewAddiScreen';
-import PreviewMaintScreen from './screens/PreviewMaintScreen';
-import DetailsDebugScreen from './screens/DetailsDebugScreen';
+import DetailsScreen from './screens/Details/DetailsScreen'; 
+import CameraAddPhotoScreen from './screens/previews/CameraAddPhotoScreen';
+import PreviewAddiScreen from './screens/previews/PreviewAddiScreen';
+import PreviewMaintScreen from './screens/previews/PreviewMaintScreen';
+import DetailsDebugScreen from './screens/Details/DetailsDebugScreen';
 import DashboardScreen from './screens/DashboardScreen'; // Ajout du Dashboard
 import MaintenanceScreen from './screens/MaintenanceScreen'; // Nouvelle page de Maintenance
 import JournalScreen from './screens/JournalScreen'; // Ajout de l'écran Journal
 import Svg, { Circle, Text as SvgText } from 'react-native-svg';
 import ArmoireScreen from './screens/ArmoireScreen';
-import DetailsArmoireScreen from './screens/DetailsArmoireScreen';
+import DetailsArmoireScreen from './screens/Details/DetailsArmoireScreen';
 
 
 const Drawer = createDrawerNavigator();
