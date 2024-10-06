@@ -374,7 +374,7 @@ export default function DashboardScreen() {
           <BarChart
             data={barChartData}
             width={Math.max(screenWidth - 40, formattedDates.length * 50)}
-            height={220}
+            height={260}
             chartConfig={chartConfig}
             verticalLabelRotation={45}
             fromZero={true}
@@ -390,7 +390,7 @@ export default function DashboardScreen() {
           <LineChart
             data={lineChartData}
             width={Math.max(screenWidth - 40, formattedDates.length * 50)}
-            height={220}
+            height={260}
             chartConfig={chartConfig}
             bezier
             style={styles.chartStyle}
@@ -512,6 +512,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'center',
     marginTop: 10,
+    marginBottom:25,
   },
   cardLarge: {
     backgroundColor: '#2c2c2c',

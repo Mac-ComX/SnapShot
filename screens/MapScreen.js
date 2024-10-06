@@ -118,7 +118,7 @@ export default function MapScreen() {
   // Animation pour le bouton flottant
   const fadeFloatingButtonAnim = useRef(new Animated.Value(1)).current;
 
-  const snapPoints = useMemo(() => [height * 0.1, height * 0.38, height * 0.85], [height]);
+  const snapPoints = useMemo(() => [height * 0.1, height * 0.45, height * 0.90], [height]);
 
   const hasSetInitialRegionRef = useRef(false);
   const initialLocationRef = useRef(null);
@@ -265,9 +265,9 @@ export default function MapScreen() {
 
   // Fonction pour calculer la taille des marqueurs en fonction du niveau de zoom
   const markerSize = useMemo(() => {
-    const defaultSize = 20;
-    const zoomFactor = zoomLevel > 1 ? zoomLevel / 7 : 1;
-    const size = defaultSize + 8 * zoomFactor;
+    const defaultSize = 15;
+    const zoomFactor = zoomLevel > 0.5 ? zoomLevel / 15 : 1;
+    const size = defaultSize * 2.9 * zoomFactor;
     return size;
   }, [zoomLevel]);
 
@@ -281,7 +281,7 @@ export default function MapScreen() {
   const handleBottomSheetChange = useCallback((index) => {
     setBottomSheetIndex(index);
 
-    if (index === 1) { // Lorsque le BottomSheet est à l'index 1
+    if (index >= 1) { // Lorsque le BottomSheet est à l'index 1
       // Animer le bouton de navigation pour le rendre invisible
       Animated.timing(fadeFloatingButtonAnim, {
         toValue: 0, // Rendre le bouton invisible
@@ -298,7 +298,7 @@ export default function MapScreen() {
     }
 
     // Animations pour les autres boutons (menu, filtre, mapType)
-    if (index > 0) { // Lorsque le BottomSheet est ouvert
+    if (index > 1) { // Lorsque le BottomSheet est ouvert
       Animated.parallel([
         Animated.timing(fadeAnim, {
           toValue: 0, // Rendre les autres boutons invisibles
@@ -589,6 +589,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
+  fullscreenModalContent: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: '80%', // Modifier la hauteur ici (exemple : 80% de l'écran)
+    width: '90%',  // Vous pouvez aussi ajuster la largeur si nécessaire
+    backgroundColor: 'white',  // Facultatif, pour une meilleure visibilité du contenu
+    borderRadius: 15, // Facultatif, pour un aspect plus arrondi
+  },
   modalContentFiltre: {
     width: '80%',
     backgroundColor: '#fff',
@@ -711,7 +720,7 @@ const styles = StyleSheet.create({
   },
   mapToggleButton: {
     position: 'absolute',
-    top: 100,
+    top: 102,
     right: 7,
     backgroundColor: '#66b08d',
     borderRadius: 10,
