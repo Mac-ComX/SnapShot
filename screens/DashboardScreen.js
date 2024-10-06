@@ -1,4 +1,4 @@
-import React, { useState, useEffect  } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,6 @@ import {
   ActivityIndicator,
   Alert,
   RefreshControl,
-  Image,
   TouchableOpacity,
   FlatList,
 } from 'react-native';
@@ -18,7 +17,6 @@ import Svg, { G, Circle } from 'react-native-svg';
 import { LineChart, BarChart } from 'react-native-chart-kit';
 import { useNavigation } from '@react-navigation/native';
 import PublicImage from '../components/PublicImage';
-
 
 const screenWidth = Dimensions.get('window').width;
 const radius = 90;
@@ -61,6 +59,7 @@ export default function DashboardScreen() {
       GAR: 0,
     },
     decorationsEnPanne: [],
+    totalArmoires: 0, // Nouveau champ pour le nombre d'armoires
   });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -70,7 +69,18 @@ export default function DashboardScreen() {
   const fetchData = async () => {
     try {
       const snapshot = await getDocs(collection(db, 'decorations'));
-      const totalPhotos = snapshot.docs.length;
+      
+      // Calculer le total des photos excluant les armoires
+      const totalPhotos = snapshot.docs.reduce((count, doc) => {
+        const data = doc.data();
+        return data.installationType !== 'Armoire' ? count + 1 : count;
+      }, 0);
+
+      // Calculer le nombre d'armoires
+      const totalArmoires = snapshot.docs.reduce((count, doc) => {
+        const data = doc.data();
+        return data.installationType === 'Armoire' ? count + 1 : count;
+      }, 0);
 
       const installationsBySpecificTypes = {
         MCD: 0,
@@ -87,13 +97,18 @@ export default function DashboardScreen() {
         'Motif Traversée': 'MTR',
         'Guirlande Traversée': 'GTR',
         'Guirlande Arbre': 'GAR',
-        Structure: 'STU',
+        'Structure': 'STU',
       };
 
       const photosByType = snapshot.docs.reduce((acc, doc) => {
         const data = doc.data();
         const type = data.installationType;
         const status = data.functionalityStatus;
+
+        // Exclure les armoires
+        if (type === 'Armoire') {
+          return acc;
+        }
 
         if (status === 'En panne') {
           decorationsEnPanne.push({
@@ -114,20 +129,28 @@ export default function DashboardScreen() {
         acc[type] = (acc[type] || 0) + 1;
         return acc;
       }, {});
-      const photosByDate = snapshot.docs.map((doc) => {
-        const data = doc.data();
-        const validDate = getValidDateFromCreatedAt(data.createdAt);
-        return validDate ? validDate.toLocaleDateString('fr-FR') : 'Date inconnue';
-      });
+
+      // Exclure les armoires des photos par date
+      const photosByDate = snapshot.docs
+        .filter((doc) => doc.data().installationType !== 'Armoire')
+        .map((doc) => {
+          const data = doc.data();
+          const validDate = getValidDateFromCreatedAt(data.createdAt);
+          return validDate ? validDate.toLocaleDateString('fr-FR') : 'Date inconnue';
+        });
 
       const groupedByDate = photosByDate.reduce((acc, date) => {
         acc[date] = (acc[date] || 0) + 1;
         return acc;
       }, {});
 
+      // Exclure les armoires des installations fonctionnelles
       const installationsByStatus = snapshot.docs.reduce((acc, doc) => {
-        const status = doc.data().functionalityStatus;
-        acc[status] = (acc[status] || 0) + 1;
+        const data = doc.data();
+        if (data.installationType !== 'Armoire') {
+          const status = data.functionalityStatus;
+          acc[status] = (acc[status] || 0) + 1;
+        }
         return acc;
       }, {});
 
@@ -139,6 +162,7 @@ export default function DashboardScreen() {
 
       setStats({
         totalPhotos,
+        totalArmoires, // Ajouter le nombre d'armoires dans les statistiques
         photosByType,
         photosByDate: Object.keys(groupedByDate)
           .sort((a, b) => {
@@ -256,6 +280,12 @@ export default function DashboardScreen() {
             <Text style={styles.kpiTitle}>Installations en Panne</Text>
             <Text style={styles.kpiValue}>{stats.installationsByStatus['En panne'] || 0}</Text>
           </View>
+
+          {/* Nouveau indicateur pour les armoires */}
+          <View style={[styles.cardSmall, { backgroundColor: '#9966FF' }]}>
+            <Text style={styles.kpiTitle}>Total des Armoires</Text>
+            <Text style={styles.kpiValue}>{stats.totalArmoires}</Text>
+          </View>
         </View>
       </ScrollView>
 
@@ -272,19 +302,19 @@ export default function DashboardScreen() {
           style={styles.horizontalScroll}
           renderItem={({ item }) => (
             <TouchableOpacity
-  onPress={() => {
-    navigation.navigate('DetailsDebugScreen', { photo: item });
-  }}
->
-  <View style={styles.panneCard}>
-    <PublicImage 
-                storagePath={item.imageUri}  // URL ou chemin Firebase
-                style={styles.panneImage}  // Style de l'image
-              />
-    <Text style={styles.panneName}>{item.name}</Text>
-    <Text style={styles.panneStatus}>{item.status}</Text>
-  </View>
-</TouchableOpacity>
+              onPress={() => {
+                navigation.navigate('DetailsDebugScreen', { photo: item });
+              }}
+            >
+              <View style={styles.panneCard}>
+                <PublicImage 
+                  storagePath={item.imageUri}  // URL ou chemin Firebase
+                  style={styles.panneImage}  // Style de l'image
+                />
+                <Text style={styles.panneName}>{item.name}</Text>
+                <Text style={styles.panneStatus}>{item.status}</Text>
+              </View>
+            </TouchableOpacity>
           )}
         />
       )}
@@ -394,7 +424,7 @@ const chartConfig = {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a1a', // Couleur de fond sombre pour un look moderne
+    backgroundColor: '#1a1a1a',
     padding: 20,
   },
   loadingContainer: {
@@ -407,13 +437,6 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     marginTop: 10,
     fontSize: 16,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#ffffff',
-    textAlign: 'center',
-    marginBottom: 30,
   },
   subTitle: {
     fontSize: 24,

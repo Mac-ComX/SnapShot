@@ -71,7 +71,7 @@ export default function ListeRuesScreen({ route }) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Sélectionnez une rue de {ville} :</Text>
+      <Text style={styles.title}>Rues de {ville} :</Text>
       <FlatList
         data={rues}
         keyExtractor={(item) => item}  // Utiliser le nom de la rue comme clé

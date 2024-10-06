@@ -13,7 +13,7 @@ import {
   KeyboardAvoidingView, 
   Platform, 
   RefreshControl,
-  TouchableWithoutFeedback,Keyboard
+  TouchableWithoutFeedback, Keyboard
 } from 'react-native';
 import { MaterialIcons, MaterialCommunityIcons, Entypo, FontAwesome } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -39,7 +39,7 @@ export default function DetailsArmoireScreen({ route }) {
   const { armoire } = route.params;
   const [capturedPhotoUri, setCapturedPhotoUri] = useState(null);
   const [additionalPhotos, setAdditionalPhotos] = useState([]);
-  const [installationList, setInstallationList] = useState([]); // Liste des installations avec images
+  const [installationList, setInstallationList] = useState([]); 
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [comment, setComment] = useState(armoire.comment || '');
@@ -73,9 +73,7 @@ export default function DetailsArmoireScreen({ route }) {
       const photos = querySnapshot.docs.map((doc) => doc.data());
       setAdditionalPhotos(photos);
       
-      // Après avoir récupéré les photos, récupérons la liste des installations
       await fetchInstallationList();
-      
       setLoading(false);
     } catch (err) {
       setError('Erreur lors de la récupération des photos');
@@ -87,46 +85,16 @@ export default function DetailsArmoireScreen({ route }) {
     try {
       const installationsRef = collection(db, 'decorations');
       
-      // Créer un Set pour éviter les doublons
-      const installationsSet = new Set();
-
-      // Requête pour les installations où installationType != 'Armoire'
-      const qType = query(
+      const q = query(
         installationsRef,
-        where('installationType', '!=', 'Armoire')
+        where('armoire', '==', armoire.armoire)  // Filtrer les installations par armoire
       );
-      const querySnapshotType = await getDocs(qType);
-      querySnapshotType.forEach(doc => {
-        const data = doc.data();
-        // Assurez-vous que 'imageUri' existe dans vos documents
-        if (data.imageUri && !data.installationName.startsWith('ARM')) {
-          installationsSet.add(JSON.stringify({ installationName: data.installationName, imageUri: data.imageUri }));
-        }
-      });
-
-      // Requête pour les installations correspondant à la valeur de "armoire" saisie par l'utilisateur
-      if (armoire.armoire) {
-        const qArmoire = query(
-          installationsRef,
-          where('armoire', '==', armoire.armoire)
-        );
-        const querySnapshotArmoire = await getDocs(qArmoire);
-        querySnapshotArmoire.forEach(doc => {
-          const data = doc.data();
-          if (data.imageUri && !data.installationName.startsWith('ARM')) {
-            installationsSet.add(JSON.stringify({ installationName: data.installationName, imageUri: data.imageUri }));
-          }
-        });
-      }
-
-      // Convertir le Set en Array d'objets
-      const installations = Array.from(installationsSet).map(item => JSON.parse(item));
+      const querySnapshot = await getDocs(q);
+      const installations = querySnapshot.docs
+        .map(doc => doc.data())
+        .filter(installation => !installation.installationID.startsWith('ARM'));  // Filtrer les installations dont l'ID ne commence pas par "ARM"
       
-      // Trier les installations par nom
-      const sortedInstallations = installations.sort((a, b) => a.installationName.localeCompare(b.installationName));
-      
-      setInstallationList(sortedInstallations);
-      
+      setInstallationList(installations);
     } catch (err) {
       console.log(err);
       setError('Erreur lors de la récupération de la liste des installations');
@@ -275,8 +243,7 @@ export default function DetailsArmoireScreen({ route }) {
   const renderHeader = () => (
     <View style={styles.container}>
       <TouchableOpacity onPress={() => setIsMainImageFullScreen(true)}>
-        
-      <Text style={styles.title}>{armoire.armoire}</Text> 
+        <Text style={styles.title}>{armoire.armoire}</Text> 
         <PublicImage 
           storagePath={armoire.imageUri}
           style={styles.largePhoto}
@@ -333,6 +300,8 @@ export default function DetailsArmoireScreen({ route }) {
       <Text style={styles.title}>Photos Additionnelles :</Text>
       {loading ? (
         <Text>Chargement des photos...</Text>
+      ) : additionalPhotos.length === 0 ? (
+        <Text style={styles.noDataText}>Aucune photo additionnelle disponible.</Text>
       ) : (
         <FlatList
           data={additionalPhotos}
@@ -372,13 +341,15 @@ export default function DetailsArmoireScreen({ route }) {
         data={installationList}
         keyExtractor={(item, index) => index.toString()}
         renderItem={({ item }) => (
-          <View style={styles.card}>
-            <PublicImage 
-              storagePath={item.imageUri}
-              style={styles.cardImage}
-            />
-            <View style={styles.cardContent}>
-              <Text style={styles.cardTitle}>{item.installationName}</Text>
+          <View style={styles.groupContainer}>
+            <View style={styles.card} key={item.id}>
+              <PublicImage 
+                storagePath={item.imageUri}
+                style={styles.cardImage}
+              />
+              <View style={styles.cardContent}>
+                <Text style={styles.cardTitle}>{item.installationName}</Text>
+              </View>
             </View>
           </View>
         )}
@@ -590,10 +561,18 @@ const styles = StyleSheet.create({
     marginVertical: 8,
     marginHorizontal: 10,
     shadowColor: '#000',
-    shadowOpacity: 0.3, // Augmenté pour une ombre plus prononcée
-    shadowRadius: 10,    // Augmenté pour une ombre plus douce et étendue
-    elevation: 5,        // Augmenté pour une ombre plus visible sur Android
+    shadowOpacity: 0.3,
+    shadowRadius: 10,    
+    elevation: 5,        
     overflow: 'hidden',
+  },
+  groupContainer: {
+    marginBottom: 2,
+  },
+  groupTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginVertical: 10,
   },
   cardImage: {
     width: 100,
@@ -613,18 +592,17 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#7f8c8d',
     fontSize: 16,
-    marginTop: 20,
+    marginTop: 0,
+    marginBottom: 15,
   },
-
-  // Autres styles existants...
   fullscreenModalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.9)', // Plus sombre pour mieux voir l'image
+    backgroundColor: 'rgba(0, 0, 0, 0.9)', 
   },
   fullscreenImage: {
     width: '100%',
     height: '100%',
-    resizeMode: 'contain', // Pour ajuster l'image sans déformation
+    resizeMode: 'contain', 
   },
   fullscreenModalClose: {
     position: 'absolute',

@@ -9,7 +9,8 @@ import {
   Alert, 
   Dimensions, 
   Animated, 
-  ScrollView 
+  ScrollView,
+  Modal
 } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
@@ -20,6 +21,7 @@ import { useNavigation } from '@react-navigation/native';
 import BottomSheet from '@gorhom/bottom-sheet';
 import SvgCircle from '../components/svg/SvgCircle';
 import PublicImage from '../components/PublicImage';
+import { Picker } from '@react-native-picker/picker';
 
 const { height } = Dimensions.get('window');
 
@@ -100,14 +102,21 @@ export default function MapScreen() {
   const [selectedPhoto, setSelectedPhoto] = useState(null);
   const [mapType, setMapType] = useState('standard');
   const [bottomSheetIndex, setBottomSheetIndex] = useState(0);
+  const [selectedArmoire, setSelectedArmoire] = useState('Toutes');
+  const [isFilterVisible, setIsFilterVisible] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
 
   const sheetRef = useRef(null);
   const mapRef = useRef(null);
   const navigation = useNavigation();
   const TOLERANCE_RADIUS = 20;
 
+  // Animations pour les autres boutons
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const translateYAnim = useRef(new Animated.Value(0)).current;
+
+  // Animation pour le bouton flottant
+  const fadeFloatingButtonAnim = useRef(new Animated.Value(1)).current;
 
   const snapPoints = useMemo(() => [height * 0.1, height * 0.38, height * 0.85], [height]);
 
@@ -203,14 +212,20 @@ export default function MapScreen() {
     };
   }, []);
 
+  // Fonction pour filtrer les photos par armoire
+  const filteredPhotos = useMemo(() => {
+    if (selectedArmoire === 'Toutes') return photos;
+    return photos.filter(photo => (photo.armoire || 'Non spécifié') === selectedArmoire);
+  }, [selectedArmoire, photos]);
+
   // Fonction pour ouvrir les détails d'une photo
   const openPhotoDetails = useCallback((photo) => {
     setSelectedPhoto(null); // Réinitialiser la sélection
-    sheetRef.current?.close(); // Fermer le modal
+    sheetRef.current?.close(); // Fermer le BottomSheet
 
     setTimeout(() => {
       setSelectedPhoto(photo); // Définir la nouvelle sélection
-      sheetRef.current?.snapToIndex(1); // Ouvrir le modal avec les nouvelles données
+      sheetRef.current?.snapToIndex(1); // Ouvrir le BottomSheet avec les nouvelles données
     }, 300); // Attendre un court instant pour éviter un bug de mise à jour
   }, []);
 
@@ -243,6 +258,11 @@ export default function MapScreen() {
     setMapType((prevType) => (prevType === 'standard' ? 'satellite' : 'standard'));
   }, []);
 
+  // Fonction pour gérer l'affichage du modal de filtre
+  const toggleFilterModal = () => {
+    setModalVisible(!modalVisible);
+  };
+
   // Fonction pour calculer la taille des marqueurs en fonction du niveau de zoom
   const markerSize = useMemo(() => {
     const defaultSize = 20;
@@ -261,34 +281,51 @@ export default function MapScreen() {
   const handleBottomSheetChange = useCallback((index) => {
     setBottomSheetIndex(index);
 
-    if (index === 2) {
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(translateYAnim, {
-          toValue: -30,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ]).start(() => console.log('Animations pour BottomSheet index 2 terminées.'));
-    } else {
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(translateYAnim, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ]).start(() => console.log('Animations pour BottomSheet index différent de 2 terminées.'));
+    if (index === 1) { // Lorsque le BottomSheet est à l'index 1
+      // Animer le bouton de navigation pour le rendre invisible
+      Animated.timing(fadeFloatingButtonAnim, {
+        toValue: 0, // Rendre le bouton invisible
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    } else { // Lorsque le BottomSheet n'est pas à l'index 1
+      // Animer le bouton de navigation pour le rendre visible
+      Animated.timing(fadeFloatingButtonAnim, {
+        toValue: 1, // Rendre le bouton visible
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
     }
-  }, [fadeAnim, translateYAnim]);
+
+    // Animations pour les autres boutons (menu, filtre, mapType)
+    if (index > 0) { // Lorsque le BottomSheet est ouvert
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 0, // Rendre les autres boutons invisibles
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(translateYAnim, {
+          toValue: -30, // Déplacer les autres boutons vers le haut
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start(() => console.log('Animations pour BottomSheet index ouvert terminées.'));
+    } else { // Lorsque le BottomSheet est fermé
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1, // Rendre les autres boutons visibles
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(translateYAnim, {
+          toValue: 0, // Revenir à leur position initiale
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start(() => console.log('Animations pour BottomSheet index fermé terminées.'));
+    }
+  }, [fadeFloatingButtonAnim, fadeAnim, translateYAnim]);
 
   // Gestion des interactions utilisateur avec la carte
   const handleUserInteractionStart = useCallback(() => {
@@ -321,177 +358,221 @@ export default function MapScreen() {
 
   return (
     <View style={styles.container}>
-      <>
-        {/* Bouton Menu */}
-        <Animated.View
-          style={[
-            styles.menuButton,
-            {
-              opacity: fadeAnim,
-              transform: [{ translateY: translateYAnim }],
-            },
-          ]}
-        >
-          <TouchableOpacity onPress={() => navigation.openDrawer()}>
-            <Ionicons name="menu" size={28} color="#1b484e" />
-          </TouchableOpacity>
-        </Animated.View>
+      {/* Bouton Menu */}
+      <Animated.View
+        style={[
+          styles.menuButton,
+          {
+            opacity: fadeAnim,
+            transform: [{ translateY: translateYAnim }],
+          },
+        ]}
+      >
+        <TouchableOpacity onPress={() => navigation.openDrawer()}>
+          <Ionicons name="menu" size={28} color="#1b484e" />
+        </TouchableOpacity>
+      </Animated.View>
 
-        {/* Carte */}
-        <MapView
-          ref={mapRef}
-          style={styles.map}
-          initialRegion={initialRegion}
-          mapType={mapType}
-          pitchEnabled={true}
-          zoomControlEnabled={true}
-          showsCompass={true}
-          onRegionChangeComplete={handleRegionChangeComplete}
-          onPanDrag={handleUserInteractionStart}
-          onTouchStart={handleUserInteractionStart}
-          onTouchEnd={handleUserInteractionEnd}
-          onMarkerPress={handleUserInteractionStart}
-        >
-          {/* Marqueur de l'utilisateur */}
-          {location && (
-            <Marker
-              coordinate={{ latitude: location.latitude, longitude: location.longitude }}
-              anchor={{ x: 0.5, y: 0.5 }}
-              flat={true}
-            >
-              <SvgCircle size={25} innerColor="#1b484e" outerColor="lightgray" />
-            </Marker>
-          )}
+      {/* Carte */}
+      <MapView
+        ref={mapRef}
+        style={styles.map}
+        initialRegion={initialRegion}
+        mapType={mapType}
+        pitchEnabled={true}
+        zoomControlEnabled={true}
+        showsCompass={true}
+        onRegionChangeComplete={handleRegionChangeComplete}
+        onPanDrag={handleUserInteractionStart}
+        onTouchStart={handleUserInteractionStart}
+        onTouchEnd={handleUserInteractionEnd}
+        onMarkerPress={handleUserInteractionStart}
+      >
 
-          {/* Marqueurs des photos */}
-          {photos.map((photo) => (
-            <PhotoMarker 
-              key={photo.id} 
-              photo={photo} 
-              onPress={openPhotoDetails} 
-              markerSize={markerSize} 
+        {/* Marqueur de l'utilisateur */}
+        {location && (
+          <Marker
+            coordinate={{ latitude: location.latitude, longitude: location.longitude }}
+            anchor={{ x: 0.5, y: 0.5 }}
+            flat={true}
+          >
+            <SvgCircle size={25} innerColor="#1b484e" outerColor="lightgray" />
+          </Marker>
+        )}
+
+        {/* Marqueurs des photos filtrées */}
+        {filteredPhotos.map((photo) => (
+          <PhotoMarker 
+            key={photo.id} 
+            photo={photo} 
+            onPress={openPhotoDetails} 
+            markerSize={markerSize} 
+          />
+        ))}
+      </MapView>
+
+      {/* BottomSheet pour les détails de la photo */}
+      <BottomSheet
+        ref={sheetRef}
+        snapPoints={snapPoints}
+        index={0}
+        onChange={handleBottomSheetChange}
+        style={styles.bottomSheet}
+      >
+        {selectedPhoto ? (
+          <ScrollView contentContainerStyle={styles.modalContent}>
+            <Text style={styles.modalTitle}>{selectedPhoto.installationName}</Text>
+            <PublicImage 
+              storagePath={selectedPhoto.imageUri}  // URL ou chemin Firebase
+              style={styles.modalImage}  // Style de l'image
             />
-          ))}
-        </MapView>
-
-        {/* BottomSheet pour les détails de la photo */}
-        <BottomSheet
-          ref={sheetRef}
-          snapPoints={snapPoints}
-          index={0}
-          onChange={handleBottomSheetChange}
-        >
-          {selectedPhoto ? (
-            <ScrollView contentContainerStyle={styles.modalContent}>
-              <Text style={styles.modalTitle}>{selectedPhoto.installationName}</Text>
-              <PublicImage 
-                storagePath={selectedPhoto.imageUri}  // URL ou chemin Firebase
-                style={styles.modalImage}  // Style de l'image
-              />
-              
-              <View style={styles.modalFullContent}>
-                {/* Adresse */}
-                <View style={styles.row}>
-                  <Ionicons name="location-outline" size={22} color="#3498db" style={styles.icon} />
-                  <Text style={styles.modalLabel}>Adresse : </Text>
-                  <Text style={styles.modalMetadata}>
-                    {selectedPhoto.address || 'Adresse non spécifiée'}
-                  </Text>
-                </View>
             
-                {/* Date */}
-                <View style={styles.row}>
-                  <Ionicons name="calendar-outline" size={22} color="#3498db" style={styles.icon} />
-                  <Text style={styles.modalLabel}>Date : </Text>
-                  <Text style={styles.modalMetadata}>
-                    {selectedPhoto?.createdAt ? formatDate(parseDateTimeString(selectedPhoto.createdAt)) : 'Date non spécifiée'}
-                  </Text>
-                </View>
-            
-                {/* Type */}
-                <View style={styles.row}>
-                  <Ionicons name="build-outline" size={22} color="#3498db" style={styles.icon} />
-                  <Text style={styles.modalLabel}>Type : </Text>
-                  <Text style={styles.modalMetadata}>{selectedPhoto.installationType || 'Non spécifié'}</Text>
-                </View>
-            
-                {/* Statut */}
-                <View style={styles.row}>
-                  <Ionicons name="checkbox-outline" size={22} color={selectedPhoto.installationStatus === 'Installée' ? '#27ae60' : '#e74c3c'} style={styles.icon} />
-                  <Text style={styles.modalLabel}>Statut : </Text>
-                  <Text style={[styles.modalMetadata, { color: selectedPhoto.installationStatus === 'Installée' ? '#27ae60' : '#e74c3c' }]}>
-                    {selectedPhoto.installationStatus || 'Non spécifié'}
-                  </Text>
-                </View>
-            
-                {/* État */}
-                <View style={styles.row}>
-                  <Ionicons name="alert-circle-outline" size={22} color="#3498db" style={styles.icon} />
-                  <Text style={styles.modalLabel}>État : </Text>
-                  <Text style={styles.modalMetadata}>{selectedPhoto.functionalityStatus || 'Non spécifié'}</Text>
-                </View>
-            
-                {/* Armoire */}
-                <View style={styles.row}>
-                  <Ionicons name="timer-outline" size={22} color="#3498db" style={styles.icon} />
-                  <Text style={styles.modalLabel}>Armoire : </Text>
-                  <Text style={styles.modalMetadata}>{selectedPhoto.armoire || 'Non spécifié'}</Text>
-                </View>
-            
-                {/* Commentaire */}
-                <View style={styles.row}>
-                  <Ionicons name="chatbubble-ellipses-outline" size={22} color="#3498db" style={styles.icon} />
-                  <Text style={styles.modalLabel}>Commentaire : </Text>
-                  <Text style={styles.modalMetadata}>{selectedPhoto.comment || 'Aucun commentaire'}</Text>
-                </View>
-
-                {/* Bouton pour naviguer vers DetailsScreen.js */}
-                <TouchableOpacity 
-                  style={styles.detailsButton} 
-                  onPress={() => {
-                    navigation.navigate('DetailsScreen', { photo: selectedPhoto });
-                  }}
-                >
-                  <Ionicons name="information-circle-outline" size={24} color="#fff" style={styles.detailsIcon} />
-                  <Text style={styles.detailsButtonText}>Voir les détails</Text>
-                </TouchableOpacity>
+            <View style={styles.modalFullContent}>
+              {/* Adresse */}
+              <View style={styles.row}>
+                <Ionicons name="location-outline" size={22} color="#3498db" style={styles.icon} />
+                <Text style={styles.modalLabel}>Adresse : </Text>
+                <Text style={styles.modalMetadata}>
+                  {selectedPhoto.address || 'Adresse non spécifiée'}
+                </Text>
               </View>
-            </ScrollView>
-          ) : (
-            <Text style={styles.noPhotoText}>Aucune photo sélectionnée</Text>
-          )}
-        </BottomSheet>
+          
+              {/* Date */}
+              <View style={styles.row}>
+                <Ionicons name="calendar-outline" size={22} color="#3498db" style={styles.icon} />
+                <Text style={styles.modalLabel}>Date : </Text>
+                <Text style={styles.modalMetadata}>
+                  {selectedPhoto?.createdAt ? formatDate(parseDateTimeString(selectedPhoto.createdAt)) : 'Date non spécifiée'}
+                </Text>
+              </View>
+          
+              {/* Type */}
+              <View style={styles.row}>
+                <Ionicons name="build-outline" size={22} color="#3498db" style={styles.icon} />
+                <Text style={styles.modalLabel}>Type : </Text>
+                <Text style={styles.modalMetadata}>{selectedPhoto.installationType || 'Non spécifié'}</Text>
+              </View>
+          
+              {/* Statut */}
+              <View style={styles.row}>
+                <Ionicons name="checkbox-outline" size={22} color={selectedPhoto.installationStatus === 'Installée' ? '#27ae60' : '#e74c3c'} style={styles.icon} />
+                <Text style={styles.modalLabel}>Statut : </Text>
+                <Text style={[styles.modalMetadata, { color: selectedPhoto.installationStatus === 'Installée' ? '#27ae60' : '#e74c3c' }]}>
+                  {selectedPhoto.installationStatus || 'Non spécifié'}
+                </Text>
+              </View>
+          
+              {/* État */}
+              <View style={styles.row}>
+                <Ionicons name="alert-circle-outline" size={22} color="#3498db" style={styles.icon} />
+                <Text style={styles.modalLabel}>État : </Text>
+                <Text style={styles.modalMetadata}>{selectedPhoto.functionalityStatus || 'Non spécifié'}</Text>
+              </View>
+          
+              {/* Armoire */}
+              <View style={styles.row}>
+                <Ionicons name="timer-outline" size={22} color="#3498db" style={styles.icon} />
+                <Text style={styles.modalLabel}>Armoire : </Text>
+                <Text style={styles.modalMetadata}>{selectedPhoto.armoire || 'Non spécifié'}</Text>
+              </View>
+          
+              {/* Commentaire */}
+              <View style={styles.row}>
+                <Ionicons name="chatbubble-ellipses-outline" size={22} color="#3498db" style={styles.icon} />
+                <Text style={styles.modalLabel}>Commentaire : </Text>
+                <Text style={styles.modalMetadata}>{selectedPhoto.comment || 'Aucun commentaire'}</Text>
+              </View>
 
-        {/* Bouton pour changer le type de carte */}
-        <Animated.View
-          style={[
-            styles.mapToggleButton,
-            {
-              opacity: fadeAnim,
-              transform: [{ translateY: translateYAnim }],
-            },
-          ]}
-        >
-          <TouchableOpacity onPress={toggleMapType}>
-            <Ionicons name={mapType === 'standard' ? 'earth' : 'map'} size={21} color="#1b484e" />
-          </TouchableOpacity>
-        </Animated.View>
+              {/* Bouton pour naviguer vers DetailsScreen.js */}
+              <TouchableOpacity 
+                style={styles.detailsButton} 
+                onPress={() => {
+                  navigation.navigate('DetailsScreen', { photo: selectedPhoto });
+                }}
+              >
+                <Ionicons name="information-circle-outline" size={24} color="#fff" style={styles.detailsIcon} />
+                <Text style={styles.detailsButtonText}>Voir les détails</Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        ) : (
+          <Text style={styles.noPhotoText}>Aucune photo sélectionnée</Text>
+        )}
+      </BottomSheet>
 
-        {/* Bouton flottant pour centrer la carte sur l'utilisateur */}
-        <Animated.View
-          style={[
-            styles.floatingButton,
-            {
-              opacity: fadeAnim,
-              transform: [{ translateY: translateYAnim }],
-            },
-          ]}
-        >
-          <TouchableOpacity onPress={goToUserLocation}>
-            <Ionicons name="location-sharp" size={28} color="#1b484e" />
-          </TouchableOpacity>
-        </Animated.View>
-      </>
+      {/* Bouton flottant pour centrer la carte sur l'utilisateur */}
+      <Animated.View
+        style={[
+          styles.floatingButton,
+          {
+            opacity: fadeFloatingButtonAnim, // Animation d'opacité dédiée
+          },
+        ]}
+      >
+        <TouchableOpacity onPress={goToUserLocation}>
+          <Ionicons name="navigate" size={30} color="#1b484e" />
+        </TouchableOpacity>
+      </Animated.View>
+
+      {/* Bouton pour afficher/masquer le filtre */}
+      <Animated.View
+        style={[
+          styles.filterToggleButton,
+          {
+            opacity: fadeAnim,
+            transform: [{ translateY: translateYAnim }],
+          },
+        ]}
+      >
+        <TouchableOpacity onPress={toggleFilterModal}>
+          <Ionicons name="filter" size={21} color="#1b484e" />
+        </TouchableOpacity>
+      </Animated.View>
+
+      {/* Modal pour le filtre d'armoire */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContentFiltre}>
+            <Text style={styles.modalTitleFiltre}>Filtrer par armoire</Text>
+            <Picker
+              selectedValue={selectedArmoire}
+              onValueChange={(itemValue) => setSelectedArmoire(itemValue)}
+            >
+              <Picker.Item label="Toutes" value="Toutes" />
+              {Array.from(new Set(photos.map(photo => photo.armoire || 'Non spécifié')))
+                .map(armoire => (
+                  <Picker.Item key={armoire} label={armoire} value={armoire} />
+                ))}
+            </Picker>
+            <TouchableOpacity
+              style={styles.applyButton}
+              onPress={toggleFilterModal}
+            >
+              <Text style={styles.applyButtonText}>Appliquer</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Bouton pour changer le type de carte */}
+      <Animated.View
+        style={[
+          styles.mapToggleButton,
+          {
+            opacity: fadeAnim,
+            transform: [{ translateY: translateYAnim }],
+          },
+        ]}
+      >
+        <TouchableOpacity onPress={toggleMapType}>
+          <Ionicons name={mapType === 'standard' ? 'earth' : 'map'} size={21} color="#1b484e" />
+        </TouchableOpacity>
+      </Animated.View>
     </View>
   );
 }
@@ -500,6 +581,43 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
+  },
+  
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContentFiltre: {
+    width: '80%',
+    backgroundColor: '#fff',
+    borderRadius: 15,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalTitleFiltre: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    textAlign: 'center',
+    color: '#34495e',
+  },
+  applyButton: {
+    marginTop: 20,
+    backgroundColor: '#3498db',
+    padding: 10,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  applyButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   map: {
     flex: 1,
@@ -525,6 +643,7 @@ const styles = StyleSheet.create({
     shadowRadius: 0,
     elevation: 5,  // Effet d'ombre pour donner de la profondeur
     margin: 0,  // Espacement autour du modal
+    zIndex:1,
   },
   modalImage: {
     width: '100%',
@@ -575,12 +694,12 @@ const styles = StyleSheet.create({
   },
   floatingButton: {
     position: 'absolute',
-    top: 145,
-    right: 7,
-    backgroundColor: '#66b08d',
-    borderRadius: 10,
-    width: 40,
-    height: 40,
+    bottom: 110,
+    right: 20,
+    backgroundColor: '#fff',
+    borderRadius: 50,
+    width: 60,
+    height: 60,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
@@ -588,6 +707,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.8,
     shadowRadius: 2,
     elevation: 5,
+    zIndex: 10, // Moins élevé que le BottomSheet
   },
   mapToggleButton: {
     position: 'absolute',
@@ -605,11 +725,27 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 5,
   },
+  filterToggleButton: {
+    position: 'absolute',
+    top: 150,
+    right: 7,
+    backgroundColor: '#66b08d',
+    borderRadius: 10,
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.8,
+    shadowRadius: 2,
+    elevation: 5,
+  },
   menuButton: {
     position: 'absolute',
     top: 55,
     left: 7,
-    zIndex: 100,
+    zIndex: 100, // Assurez-vous qu'il est en dessous du BottomSheet mais au-dessus des autres éléments
     backgroundColor: '#66b08d',
     borderRadius: 10,
     width: 40,
@@ -638,5 +774,24 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  armoireFilter: {
+    position: 'absolute',
+    top: 250,
+    left: 10,
+    zIndex: 100,
+    backgroundColor: '#ffffff',
+    padding: 10,
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  bottomSheet: {
+    zIndex: 1000, // zIndex élevé pour être au-dessus des autres composants
+    elevation: 20, // elevation élevée pour Android
+    // Suppression de position: 'absolute'
   },
 });
