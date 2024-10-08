@@ -44,28 +44,28 @@ export default function PhotosRueScreen({ route }) {
   const fetchPhotos = useCallback(async () => {
     setLoading(true);
     setError(null);
-  
+
     try {
       let validFilters = [
         where('rue', '==', rue),
         where('ville', '==', ville),
         where('functionalityStatus', '==', 'Fonctionnelle'),
       ];
-  
+
       if (filter === 'installée') {
         validFilters.push(where('installationStatus', '==', 'Installée'));
       } else if (filter === 'non installée') {
         validFilters.push(where('installationStatus', '==', 'Non installée'));
       }
-  
+
       const decorationsCollection = collection(db, 'decorations');
       const photosQuery = query(decorationsCollection, ...validFilters);
       const snapshot = await getDocs(photosQuery);
       let photosList = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-  
+
       // Filtrer les photos pour exclure les "Armoires" côté client
       photosList = photosList.filter(photo => photo.installationType !== 'Armoire');
-  
+
       // Tri des décorations en fonction du sortOrder
       if (sortOrder === 'name') {
         photosList.sort((a, b) => {
@@ -78,7 +78,7 @@ export default function PhotosRueScreen({ route }) {
       } else if (sortOrder === 'date_desc') {
         photosList.sort((a, b) => parseDate(b.createdAt) - parseDate(a.createdAt));
       }
-  
+
       setPhotos(photosList);
     } catch (err) {
       setError('Erreur lors du chargement des photos');
@@ -88,7 +88,6 @@ export default function PhotosRueScreen({ route }) {
       setRefreshing(false);
     }
   }, [rue, ville, filter, sortOrder]);
-  
 
   useEffect(() => {
     fetchPhotos();
@@ -221,9 +220,9 @@ export default function PhotosRueScreen({ route }) {
         >
           <TouchableOpacity onPress={() => openPhotoDetails(item)}>
             <View style={[styles.card, isSwiped && styles.cardSwiped]}>
-              <PublicImage 
-                storagePath={item.imageUri}  // URL ou chemin Firebase
-                style={styles.photo}  // Style de l'image
+              <PublicImage
+                storagePath={item.imageUri}
+                style={styles.photo}
               />
               <View style={styles.textContainer}>
                 <Text style={styles.title}>{item.installationName || 'Nom indisponible'}</Text>
@@ -252,7 +251,11 @@ export default function PhotosRueScreen({ route }) {
 
   return (
     <View style={styles.container}>
+      {/* Header avec la flèche de retour */}
       <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <MaterialIcons name="arrow-back" size={28} color="#000" />
+        </TouchableOpacity>
         <View style={styles.headerTextContainer}>
           <Text style={styles.headerTitle} numberOfLines={1} ellipsizeMode="tail">
             {filter === 'tout'
@@ -387,9 +390,12 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 10,
+    // Vous pouvez ajuster le padding ou la marge selon vos besoins
+  },
+  backButton: {
+    padding: 10,
   },
   headerTextContainer: {
     flex: 1,
@@ -398,6 +404,7 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: 'bold',
     color: '#2c3e50',
+    textAlign: 'center',
   },
   filterIcon: {
     backgroundColor: '#3498db',

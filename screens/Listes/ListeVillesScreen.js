@@ -3,6 +3,7 @@ import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator, 
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../../services/firebase';
+import Icon from 'react-native-vector-icons/MaterialIcons'; // Import de l'icône
 
 export default function ListeVillesScreen() {
   const [villes, setVilles] = useState([]);
@@ -20,7 +21,7 @@ export default function ListeVillesScreen() {
             const data = doc.data();
             const createdAt = data.createdAt;
 
-            // Extraire l'année à partir de createdAt (comme dans ListeAnneesScreen)
+            // Extraire l'année à partir de createdAt
             const [day, month, year] = createdAt.split(',')[0].split('/');
             const docYear = year;
 
@@ -60,7 +61,14 @@ export default function ListeVillesScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Sélectionnez une ville:</Text>
+      {/* Ajouter le header personnalisé avec la flèche de retour et le titre */}
+      <View style={styles.headerContainer}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Icon name="arrow-back" size={24} color="#000" />
+        </TouchableOpacity>
+        <Text style={styles.title}>Sélectionnez une ville</Text>
+      </View>
+
       <FlatList
         data={villes}
         keyExtractor={(item) => item}
@@ -80,7 +88,7 @@ export default function ListeVillesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
+    // padding: 20, // Retirer le padding pour éviter le décalage du header personnalisé
   },
   loadingContainer: {
     flex: 1,
@@ -92,16 +100,28 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  // Nouveau style pour le header personnalisé
+  headerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 15,
+    backgroundColor: '#f0f0f0', // Couleur de fond optionnelle
+  },
+  backButton: {
+    padding: 5,
+  },
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 20,
+    flex: 1, // Pour occuper l'espace restant
     textAlign: 'center',
   },
   cityButton: {
     padding: 15,
     backgroundColor: '#1b484e',
     marginVertical: 10,
+    marginHorizontal: 20, // Ajouter des marges pour aligner avec le header
     borderRadius: 10,
     alignItems: 'center',
   },

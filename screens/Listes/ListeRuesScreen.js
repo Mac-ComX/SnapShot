@@ -3,6 +3,7 @@ import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator, 
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { useNavigation } from '@react-navigation/native';
 import { db } from '../../services/firebase';
+import Icon from 'react-native-vector-icons/MaterialIcons'; // Import de l'icône
 
 export default function ListeRuesScreen({ route }) {
   const { ville } = route.params;  // Récupérer la ville depuis les paramètres de navigation
@@ -14,7 +15,7 @@ export default function ListeRuesScreen({ route }) {
   // Fonction pour récupérer les données depuis Firestore
   const fetchRues = useCallback(async () => {
     try {
-      setLoading(true); // Optionnel : vous pouvez laisser ou retirer cette ligne pour le spinner initial
+      setLoading(true);
       const decorationsQuery = query(
         collection(db, 'decorations'),
         where('ville', '==', ville),
@@ -26,18 +27,18 @@ export default function ListeRuesScreen({ route }) {
       querySnapshot.forEach((doc) => {
         const data = doc.data();
         if (data.rue) {
-          ruesSet.add(data.rue);  // Ajouter la rue si elle est disponible et fonctionnelle
+          ruesSet.add(data.rue);
         }
       });
 
-      const sortedRues = Array.from(ruesSet).sort();  // Convertir en tableau et trier par ordre alphabétique
+      const sortedRues = Array.from(ruesSet).sort();
       setRues(sortedRues);
     } catch (error) {
       console.error('Erreur lors de la récupération des rues :', error);
       Alert.alert('Erreur', 'Impossible de récupérer les rues.');
     } finally {
-      setLoading(false); // Fin du chargement
-      setRefreshing(false); // Fin du rafraîchissement
+      setLoading(false);
+      setRefreshing(false);
     }
   }, [ville]);
 
@@ -48,8 +49,8 @@ export default function ListeRuesScreen({ route }) {
 
   // Fonction de rafraîchissement pour le pull-to-refresh
   const onRefresh = useCallback(() => {
-    setRefreshing(true); // Déclenche le rafraîchissement
-    fetchRues(); // Recharger les données
+    setRefreshing(true);
+    fetchRues();
   }, [fetchRues]);
 
   if (loading && !refreshing) {
@@ -71,13 +72,20 @@ export default function ListeRuesScreen({ route }) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Rues de {ville} :</Text>
+      {/* Ajouter le header personnalisé avec la flèche de retour et le titre */}
+      <View style={styles.headerContainer}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Icon name="arrow-back" size={24} color="#000" />
+        </TouchableOpacity>
+        <Text style={styles.title}>Rues de {ville}</Text>
+      </View>
+
       <FlatList
         data={rues}
         keyExtractor={(item) => item}  // Utiliser le nom de la rue comme clé
         renderItem={({ item }) => (
-          <TouchableOpacity 
-            style={styles.streetButton} 
+          <TouchableOpacity
+            style={styles.streetButton}
             onPress={() => navigation.navigate('PhotosRueScreen', { ville, rue: item })}  // Naviguer vers les photos de la rue
           >
             <Text style={styles.streetText}>{item}</Text>
@@ -97,23 +105,35 @@ export default function ListeRuesScreen({ route }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
+    // padding: 20, // Retirer le padding ici pour éviter de décaler le header personnalisé
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  // Nouveau style pour le header personnalisé
+  headerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 15,
+    backgroundColor: '#f0f0f0', // Couleur de fond optionnelle
+  },
+  backButton: {
+    padding: 5,
+  },
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    marginBottom: 20,
+    flex: 1, // Pour occuper l'espace restant
     textAlign: 'center',
   },
   streetButton: {
     padding: 15,
     backgroundColor: '#66b08d',
     marginVertical: 10,
+    marginHorizontal: 20, // Ajouter des marges horizontales pour aligner avec le header
     borderRadius: 10,
   },
   streetText: {

@@ -59,7 +59,8 @@ export default function DashboardScreen() {
       GAR: 0,
     },
     decorationsEnPanne: [],
-    totalArmoires: 0, // Nouveau champ pour le nombre d'armoires
+    totalArmoires: 0,
+    armoireData: null, // Données pour le graphique des armoires
   });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -69,9 +70,16 @@ export default function DashboardScreen() {
   const fetchData = async () => {
     try {
       const snapshot = await getDocs(collection(db, 'decorations'));
-      
-      // Calculer le total des photos excluant les armoires
-      const totalPhotos = snapshot.docs.reduce((count, doc) => {
+
+      // Exclure les installations dont le nom commence par 'ARM'
+      const installations = snapshot.docs.filter((doc) => {
+        const data = doc.data();
+        const installationName = data.installationName || '';
+        return !installationName.startsWith('ARM');
+      });
+
+      // Calculer le total des photos en excluant les armoires et les installations commençant par 'ARM'
+      const totalPhotos = installations.reduce((count, doc) => {
         const data = doc.data();
         return data.installationType !== 'Armoire' ? count + 1 : count;
       }, 0);
@@ -91,22 +99,23 @@ export default function DashboardScreen() {
       };
 
       const decorationsEnPanne = [];
-        
+
       const typeMap = {
         'Motif Candélabre': 'MCD',
         'Motif Traversée': 'MTR',
         'Guirlande Traversée': 'GTR',
         'Guirlande Arbre': 'GAR',
-        'Structure': 'STU',
+        Structure: 'STU',
       };
 
-      const photosByType = snapshot.docs.reduce((acc, doc) => {
+      // Calculer photosByType en excluant les installations de type 'Armoire'
+      const photosByType = installations.reduce((acc, doc) => {
         const data = doc.data();
         const type = data.installationType;
         const status = data.functionalityStatus;
 
-        // Exclure les armoires
         if (type === 'Armoire') {
+          // Exclure les installations de type 'Armoire'
           return acc;
         }
 
@@ -130,8 +139,8 @@ export default function DashboardScreen() {
         return acc;
       }, {});
 
-      // Exclure les armoires des photos par date
-      const photosByDate = snapshot.docs
+      // Photos par date en excluant les installations de type 'Armoire'
+      const photosByDate = installations
         .filter((doc) => doc.data().installationType !== 'Armoire')
         .map((doc) => {
           const data = doc.data();
@@ -144,25 +153,64 @@ export default function DashboardScreen() {
         return acc;
       }, {});
 
-      // Exclure les armoires des installations fonctionnelles
-      const installationsByStatus = snapshot.docs.reduce((acc, doc) => {
+      // Installations par statut en excluant les installations de type 'Armoire'
+      const installationsByStatus = installations.reduce((acc, doc) => {
         const data = doc.data();
-        if (data.installationType !== 'Armoire') {
+        const type = data.installationType;
+        if (type !== 'Armoire') {
           const status = data.functionalityStatus;
           acc[status] = (acc[status] || 0) + 1;
         }
         return acc;
       }, {});
 
-      const installationsByInstallationStatus = snapshot.docs.reduce((acc, doc) => {
-        const status = doc.data().installationStatus;
-        acc[status] = (acc[status] || 0) + 1;
+      const installationsByInstallationStatus = installations.reduce((acc, doc) => {
+        const data = doc.data();
+        const type = data.installationType;
+        if (type !== 'Armoire') {
+          const status = data.installationStatus;
+          acc[status] = (acc[status] || 0) + 1;
+        }
         return acc;
       }, {});
 
+      // Regrouper les installations par armoire en excluant les installations de type 'Armoire'
+      const installationsByArmoire = {};
+
+      installations.forEach((doc) => {
+        const data = doc.data();
+        const type = data.installationType;
+        if (type !== 'Armoire') {
+          const armoire = data.armoire || 'Inconnu';
+
+          if (!installationsByArmoire[armoire]) {
+            installationsByArmoire[armoire] = 0;
+          }
+          installationsByArmoire[armoire] += 1;
+        }
+      });
+
+      // Préparer les données pour le graphique des armoires
+      const armoireLabels = [];
+      const armoireCounts = [];
+
+      Object.keys(installationsByArmoire).forEach((armoire) => {
+        armoireLabels.push(armoire);
+        armoireCounts.push(installationsByArmoire[armoire]);
+      });
+
+      const armoireData = {
+        labels: armoireLabels,
+        datasets: [
+          {
+            data: armoireCounts,
+          },
+        ],
+      };
+
       setStats({
         totalPhotos,
-        totalArmoires, // Ajouter le nombre d'armoires dans les statistiques
+        totalArmoires,
         photosByType,
         photosByDate: Object.keys(groupedByDate)
           .sort((a, b) => {
@@ -178,6 +226,7 @@ export default function DashboardScreen() {
         installationsByInstallationStatus,
         installationsBySpecificTypes,
         decorationsEnPanne,
+        armoireData, // Ajouter les données du graphique des armoires
       });
       setLoading(false);
     } catch (error) {
@@ -247,10 +296,9 @@ export default function DashboardScreen() {
     <ScrollView
       style={styles.container}
       refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#ffffff" />
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#1b484e" />
       }
     >
-
       <Text style={styles.subTitle}>Indicateurs</Text>
       {/* Indicateurs */}
       <ScrollView
@@ -260,7 +308,7 @@ export default function DashboardScreen() {
       >
         <View style={styles.grid}>
           <View style={[styles.cardSmall, { backgroundColor: '#4BC0C0' }]}>
-            <Text style={styles.kpiTitle}>Total des Photos</Text>
+            <Text style={styles.kpiTitle}>Total des Décorations</Text>
             <Text style={styles.kpiValue}>{stats.totalPhotos}</Text>
           </View>
 
@@ -281,7 +329,7 @@ export default function DashboardScreen() {
             <Text style={styles.kpiValue}>{stats.installationsByStatus['En panne'] || 0}</Text>
           </View>
 
-          {/* Nouveau indicateur pour les armoires */}
+          {/* Indicateur pour les armoires */}
           <View style={[styles.cardSmall, { backgroundColor: '#9966FF' }]}>
             <Text style={styles.kpiTitle}>Total des Armoires</Text>
             <Text style={styles.kpiValue}>{stats.totalArmoires}</Text>
@@ -307,10 +355,7 @@ export default function DashboardScreen() {
               }}
             >
               <View style={styles.panneCard}>
-                <PublicImage 
-                  storagePath={item.imageUri}  // URL ou chemin Firebase
-                  style={styles.panneImage}  // Style de l'image
-                />
+                <PublicImage storagePath={item.imageUri} style={styles.panneImage} />
                 <Text style={styles.panneName}>{item.name}</Text>
                 <Text style={styles.panneStatus}>{item.status}</Text>
               </View>
@@ -371,17 +416,43 @@ export default function DashboardScreen() {
       <View style={styles.cardLarge}>
         <Text style={styles.chartTitle}>Décorations Capturées par Jour</Text>
         <ScrollView horizontal={true}>
-          <BarChart
-            data={barChartData}
-            width={Math.max(screenWidth - 40, formattedDates.length * 50)}
-            height={260}
-            chartConfig={chartConfig}
-            verticalLabelRotation={45}
-            fromZero={true}
-            style={styles.chartStyle}
-            showValuesOnTopOfBars={true}
-          />
+          <View>
+            <BarChart
+              data={barChartData}
+              width={Math.max(screenWidth - 30, formattedDates.length * 50)}
+              height={300}
+              chartConfig={chartConfig}
+              verticalLabelRotation={45}
+              fromZero={true}
+              style={[styles.chartStyle, { marginLeft: -25}]} // Ajustement du marginLeft
+              showValuesOnTopOfBars={true}
+              xLabelsOffset={10} // Ajustement du xLabelsOffset
+              yLabelsOffset={20}
+              withVerticalLines={false} // Empêcher les lignes verticales de dépasser
+            />
+          </View>
         </ScrollView>
+      </View>
+
+      {/* Nouveau graphique des installations par armoire */}
+      <View style={styles.cardLarge}>
+        <Text style={styles.chartTitle}>Installations par Armoire</Text>
+        {stats.armoireData && (
+          <ScrollView horizontal={true}>
+            <BarChart
+              data={stats.armoireData}
+              width={Math.max(screenWidth - 40, stats.armoireData.labels.length * 70)}
+              height={600}
+              chartConfig={chartConfig}
+              verticalLabelRotation={45}
+              fromZero={true}
+              style={[styles.chartStyle, { marginLeft: -25,}]} 
+              showValuesOnTopOfBars={true}
+              xLabelsOffset={-10}
+              yLabelsOffset={20}
+            />
+          </ScrollView>
+        )}
       </View>
 
       <View style={styles.cardLarge}>
@@ -393,7 +464,7 @@ export default function DashboardScreen() {
             height={260}
             chartConfig={chartConfig}
             bezier
-            style={styles.chartStyle}
+            style={[styles.chartStyle, { marginLeft: -40 }]} 
             verticalLabelRotation={45}
           />
         </ScrollView>
@@ -401,47 +472,27 @@ export default function DashboardScreen() {
     </ScrollView>
   );
 }
-
-const chartConfig = {
-  backgroundGradientFrom: '#1b484e',
-  backgroundGradientTo: '#1b484e',
-  color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-  labelColor: () => '#ffffff',
-  decimalPlaces: 0,
-  style: {
-    borderRadius: 16,
-  },
-  propsForDots: {
-    r: '5',
-    strokeWidth: '2',
-    stroke: '#66b08d',
-  },
-  propsForBackgroundLines: {
-    stroke: '#444',
-  },
-};
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#F0F2F5',
     padding: 20,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#F0F2F5',
   },
   loadingText: {
-    color: '#ffffff',
+    color: '#555',
     marginTop: 10,
     fontSize: 16,
   },
   subTitle: {
     fontSize: 24,
-    fontWeight: '600',
-    color: '#ffffff',
+    fontWeight: '700',
+    color: '#333',
     marginBottom: 15,
     marginTop: 30,
   },
@@ -452,112 +503,116 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   cardSmall: {
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: 12,
+    padding: 15,
     width: 150,
     height: 150,
     marginRight: 15,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#fff',
     shadowColor: '#000',
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    elevation: 5,
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 3,
   },
   kpiTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '500',
-    color: '#ffffff',
-    marginBottom: 10,
+    color: '#555',
+    marginBottom: 8,
     textAlign: 'center',
   },
   kpiValue: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: '700',
-    color: '#ffffff',
+    color: '#222',
     textAlign: 'center',
   },
   panneCard: {
-    backgroundColor: '#2c2c2c',
-    borderRadius: 16,
+    backgroundColor: '#fff',
+    borderRadius: 12,
     padding: 10,
     marginRight: 15,
-    width: 150,
+    width: 160,
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    elevation: 5,
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 3,
   },
   panneImage: {
-    width: 130,
-    height: 130,
-    borderRadius: 16,
+    width: 140,
+    height: 140,
+    borderRadius: 12,
     marginBottom: 10,
   },
   panneName: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
-    color: '#ffffff',
+    color: '#333',
     textAlign: 'center',
     marginBottom: 5,
   },
   panneStatus: {
-    fontSize: 14,
-    color: '#FF6384',
+    fontSize: 12,
+    color: '#E74C3C',
     textAlign: 'center',
   },
   noDataText: {
-    color: '#ffffff',
+    color: '#777',
     fontSize: 16,
     textAlign: 'center',
     marginTop: 10,
-    marginBottom:25,
+    marginBottom: 25,
   },
   cardLarge: {
-    backgroundColor: '#2c2c2c',
-    borderRadius: 16,
+    backgroundColor: '#fff',
+    borderRadius: 12,
     padding: 20,
     marginBottom: 20,
     shadowColor: '#000',
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    elevation: 5,
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 3,
   },
   chartTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#ffffff',
+    fontWeight: '700',
+    color: '#333',
     marginBottom: 10,
     textAlign: 'center',
   },
   chartStyle: {
     borderRadius: 16,
+    marginVertical: 8,
   },
   pieChartContainer: {
-    top: 10,
     left: 50,
+    top: 10,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
+    padding: 20,
   },
   centerTextContainer: {
-    position: 'absolute',
-    top: '40%',
-    alignItems: 'center',
     left: 75,
+    position: 'absolute',
+    top: '46%',
+    alignItems: 'center',
   },
   centerText: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#ffffff',
+    color: '#333',
   },
   centerLabel: {
     fontSize: 16,
-    color: '#ffffff',
+    color: '#777',
   },
   legendContainer: {
     marginTop: 20,
+    alignItems: 'center',
   },
   legendItem: {
     flexDirection: 'row',
@@ -572,6 +627,33 @@ const styles = StyleSheet.create({
   },
   legendLabel: {
     fontSize: 14,
-    color: '#ffffff',
+    color: '#555',
+  },
+  valuesContainer: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+  },
+  barValue: {
+    fontSize: 12,
+    color: '#333',
   },
 });
+
+const chartConfig = {
+  backgroundColor: '#ffffff',
+  backgroundGradientFrom: '#ffffff',
+  backgroundGradientTo: '#ffffff',
+  fillShadowGradient: '#3498DB',
+  fillShadowGradientTo: '#2980B9',
+  fillShadowGradientToOpacity: 1,
+  color: (opacity = 1) => `rgba(52, 152, 219, ${opacity})`,
+  labelColor: () => 'green',
+  decimalPlaces: 0,
+  style: {
+    borderRadius: 16,
+  },
+  propsForBackgroundLines: {
+    stroke: '#eee',
+  },
+};

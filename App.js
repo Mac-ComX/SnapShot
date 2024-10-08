@@ -66,11 +66,10 @@ function CustomDrawerContent(props) {
               fill="#666"
               textAnchor="middle"
             >
-              C
             </SvgText>
           </Svg>
           <Text style={styles.footerText}>
-            Version 1.5.0 Public by @Kmel
+            Version 1.5.1 Public by @Kmel
           </Text>
         </View>
       </DrawerContentScrollView>
@@ -353,7 +352,8 @@ const styles = StyleSheet.create({
   footerContainer: {
     alignItems: 'center',
     flexDirection: 'row',
-    justifyContent: 'center',
+    justifyContent: 'left',
+    left:8,
     marginBottom: 400,
     top: 200,
   },

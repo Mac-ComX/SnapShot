@@ -92,9 +92,12 @@ export default function DetailsArmoireScreen({ route }) {
       const querySnapshot = await getDocs(q);
       const installations = querySnapshot.docs
         .map(doc => doc.data())
-        .filter(installation => !installation.installationID.startsWith('ARM'));  // Filtrer les installations dont l'ID ne commence pas par "ARM"
+        .filter(installation => !installation.installationID.startsWith('ARM'))  // Filtrer les installations dont l'ID ne commence pas par "ARM"
+        .sort((a, b) => a.installationName.localeCompare(b.installationName)); // Tri par nom
+
       
       setInstallationList(installations);
+
     } catch (err) {
       console.log(err);
       setError('Erreur lors de la récupération de la liste des installations');
@@ -349,6 +352,7 @@ export default function DetailsArmoireScreen({ route }) {
               />
               <View style={styles.cardContent}>
                 <Text style={styles.cardTitle}>{item.installationName}</Text>
+                <Text style={styles.cardText}>{item.numeroRue} {item.rue}</Text>
               </View>
             </View>
           </View>
@@ -584,9 +588,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   cardTitle: {
-    fontSize: 18,
+    fontSize: 13,
     fontWeight: '600',
     color: '#2c3e50',
+    bottom:20,
+  },
+  cardText:{
+    color: '#3498db',
+    bottom:10,
   },
   noDataText: {
     textAlign: 'center',

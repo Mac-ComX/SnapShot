@@ -22,7 +22,7 @@ export default function FormScreen() {
   const [installationType, setInstallationType] = useState('Motif Candélabre');
   const [installationStatus, setInstallationStatus] = useState('Installée');
   const [functionalityStatus, setFunctionalityStatus] = useState('Fonctionnelle');
-  const [comment, setComment] = useState('R.A.S');
+  const [comment, setComment] = useState('Numéro d\'affaire: 5418L ');
   const [address, setAddress] = useState('');
   const [latitude, setLatitude] = useState(null);
   const [longitude, setLongitude] = useState(null);

@@ -1,4 +1,3 @@
-// screens/MapScreen.js
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { 
   View, 
@@ -10,12 +9,15 @@ import {
   Dimensions, 
   Animated, 
   ScrollView,
-  Modal
+  Modal,
+  Image,
+  Linking,
+  Platform
 } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
+import MapView, { Marker, Callout } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { collection, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { useNavigation } from '@react-navigation/native';
 import BottomSheet from '@gorhom/bottom-sheet';
@@ -61,15 +63,42 @@ const formatDate = (date) => {
 };
 
 // Composant de marqueur optimisé avec React.memo
-const PhotoMarker = React.memo(({ photo, onPress, markerSize }) => {
+const PhotoMarker = React.memo(({ photo, onPressDetails, onPressEditPosition, markerSize, onDragEnd, draggable }) => {
   const borderColor = useMemo(() => {
-    if (photo.functionalityStatus === 'En panne') {
+    if (photo.installationType === 'Armoire') { 
+      return 'black'; // Couleur noire pour les armoires
+    } else if (photo.functionalityStatus === 'En panne') {
       return 'red';
     } else if (photo.functionalityStatus === 'Fonctionnelle') {
       return 'green';
     }
     return '#ffffff'; // Couleur par défaut
-  }, [photo.functionalityStatus]);
+  }, [photo.functionalityStatus, photo.installationType]);
+
+  // Fonction pour ouvrir l'application GPS
+  const handleNavigateToMarker = () => {
+    const latitude = photo.latitude;
+    const longitude = photo.longitude;
+    const label = encodeURIComponent(photo.installationName || 'Destination');
+    let url = '';
+
+    if (Platform.OS === 'ios') {
+      url = `http://maps.apple.com/?ll=${latitude},${longitude}&q=${label}`;
+    } else {
+      url = `geo:${latitude},${longitude}?q=${latitude},${longitude}(${label})`;
+    }
+
+    Linking.canOpenURL(url).then((supported) => {
+      if (supported) {
+        Linking.openURL(url);
+      } else {
+        Alert.alert('Erreur', 'Aucune application de navigation disponible.');
+      }
+    }).catch(err => {
+      console.error('Erreur lors de l\'ouverture de l\'application de navigation:', err);
+      Alert.alert('Erreur', 'Impossible d\'ouvrir l\'application de navigation.');
+    });
+  };
 
   return (
     <Marker
@@ -77,10 +106,11 @@ const PhotoMarker = React.memo(({ photo, onPress, markerSize }) => {
         latitude: photo.latitude,
         longitude: photo.longitude,
       }}
-      onPress={() => onPress(photo)}
+      draggable={draggable}
+      onDragEnd={(e) => onDragEnd(photo, e.nativeEvent.coordinate)}
     >
       <PublicImage 
-        storagePath={photo.imageUri}  // URL ou chemin Firebase
+        storagePath={photo.imageUri}
         style={[
           styles.markerImage,
           {
@@ -88,8 +118,32 @@ const PhotoMarker = React.memo(({ photo, onPress, markerSize }) => {
             height: markerSize,
             borderColor,
           },
-        ]}  // Style de l'image
+        ]}
       />
+      <Callout tooltip>
+        <View style={styles.calloutContainer}>
+          {/* Image de l'installation */}
+          <PublicImage
+            storagePath={photo.imageUri}
+            style={styles.calloutImage}
+          />
+          <Text style={styles.calloutTitle}>{photo.rue || photo.installationName}</Text>
+          <View style={styles.calloutButtonsContainer}>
+            <TouchableOpacity style={styles.calloutButton} onPress={() => onPressDetails(photo)}>
+              <Ionicons name="information-circle-outline" size={20} color="#fff" />
+              <Text style={styles.calloutButtonText}>Détails</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.calloutButton} onPress={() => onPressEditPosition(photo)}>
+              <Ionicons name="map-outline" size={20} color="#fff" />
+              <Text style={styles.calloutButtonText}>Modifier</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.calloutButton} onPress={handleNavigateToMarker}>
+              <Ionicons name="navigate-outline" size={20} color="#fff" />
+              <Text style={styles.calloutButtonText}>GPS</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Callout>
     </Marker>
   );
 });
@@ -103,8 +157,8 @@ export default function MapScreen() {
   const [mapType, setMapType] = useState('standard');
   const [bottomSheetIndex, setBottomSheetIndex] = useState(0);
   const [selectedArmoire, setSelectedArmoire] = useState('Toutes');
-  const [isFilterVisible, setIsFilterVisible] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
+  const [draggablePhotoId, setDraggablePhotoId] = useState(null); // État pour le marqueur déplaçable
 
   const sheetRef = useRef(null);
   const mapRef = useRef(null);
@@ -158,7 +212,7 @@ export default function MapScreen() {
 
       // Abonnement aux mises à jour de la localisation
       locationSubscription = await Location.watchPositionAsync(
-        { accuracy: Location.Accuracy.Highest, timeInterval: 5000, distanceInterval: 10 },
+        { accuracy: Location.Accuracy.Highest, timeInterval: 5000, distanceInterval: 3 },
         (newLocation) => {
           const { coords: newCoords } = newLocation;
 
@@ -219,7 +273,7 @@ export default function MapScreen() {
   }, [selectedArmoire, photos]);
 
   // Fonction pour ouvrir les détails d'une photo
-  const openPhotoDetails = useCallback((photo) => {
+  const handlePressDetails = useCallback((photo) => {
     setSelectedPhoto(null); // Réinitialiser la sélection
     sheetRef.current?.close(); // Fermer le BottomSheet
 
@@ -227,6 +281,12 @@ export default function MapScreen() {
       setSelectedPhoto(photo); // Définir la nouvelle sélection
       sheetRef.current?.snapToIndex(1); // Ouvrir le BottomSheet avec les nouvelles données
     }, 300); // Attendre un court instant pour éviter un bug de mise à jour
+  }, []);
+
+  // Fonction pour activer le mode déplaçable du marqueur
+  const handlePressEditPosition = useCallback((photo) => {
+    setDraggablePhotoId(photo.id);
+    Alert.alert('Mode édition', 'Vous pouvez maintenant déplacer le marqueur sur la carte.');
   }, []);
 
   // Fonction pour centrer la carte sur la position de l'utilisateur
@@ -281,49 +341,46 @@ export default function MapScreen() {
   const handleBottomSheetChange = useCallback((index) => {
     setBottomSheetIndex(index);
 
-    if (index >= 1) { // Lorsque le BottomSheet est à l'index 1
-      // Animer le bouton de navigation pour le rendre invisible
+    if (index >= 1) {
       Animated.timing(fadeFloatingButtonAnim, {
-        toValue: 0, // Rendre le bouton invisible
+        toValue: 0,
         duration: 300,
         useNativeDriver: true,
       }).start();
-    } else { // Lorsque le BottomSheet n'est pas à l'index 1
-      // Animer le bouton de navigation pour le rendre visible
+    } else {
       Animated.timing(fadeFloatingButtonAnim, {
-        toValue: 1, // Rendre le bouton visible
+        toValue: 1,
         duration: 300,
         useNativeDriver: true,
       }).start();
     }
 
-    // Animations pour les autres boutons (menu, filtre, mapType)
-    if (index > 1) { // Lorsque le BottomSheet est ouvert
+    if (index > 1) {
       Animated.parallel([
         Animated.timing(fadeAnim, {
-          toValue: 0, // Rendre les autres boutons invisibles
+          toValue: 0,
           duration: 300,
           useNativeDriver: true,
         }),
         Animated.timing(translateYAnim, {
-          toValue: -30, // Déplacer les autres boutons vers le haut
+          toValue: -30,
           duration: 300,
           useNativeDriver: true,
         }),
-      ]).start(() => console.log('Animations pour BottomSheet index ouvert terminées.'));
-    } else { // Lorsque le BottomSheet est fermé
+      ]).start();
+    } else {
       Animated.parallel([
         Animated.timing(fadeAnim, {
-          toValue: 1, // Rendre les autres boutons visibles
+          toValue: 1,
           duration: 300,
           useNativeDriver: true,
         }),
         Animated.timing(translateYAnim, {
-          toValue: 0, // Revenir à leur position initiale
+          toValue: 0,
           duration: 300,
           useNativeDriver: true,
         }),
-      ]).start(() => console.log('Animations pour BottomSheet index fermé terminées.'));
+      ]).start();
     }
   }, [fadeFloatingButtonAnim, fadeAnim, translateYAnim]);
 
@@ -335,7 +392,33 @@ export default function MapScreen() {
   const handleUserInteractionEnd = useCallback(() => {
     setTimeout(() => {
       isUserInteracting.current = false;
-    }, 1000); // Temps d'attente avant de réactiver les animations automatiques
+    }, 1000);
+  }, []);
+
+  // Fonction pour gérer la fin du déplacement du marqueur
+  const handleMarkerDragEnd = useCallback(async (photo, newCoordinate) => {
+    // Mettre à jour les coordonnées du marqueur dans l'état local
+    setPhotos((prevPhotos) =>
+      prevPhotos.map((p) =>
+        p.id === photo.id ? { ...p, latitude: newCoordinate.latitude, longitude: newCoordinate.longitude } : p
+      )
+    );
+
+    // Mettre à jour les coordonnées dans la base de données Firebase
+    try {
+      const photoDocRef = doc(db, 'decorations', photo.id);
+      await updateDoc(photoDocRef, {
+        latitude: newCoordinate.latitude,
+        longitude: newCoordinate.longitude,
+      });
+      Alert.alert('Succès', 'La position a été mise à jour avec succès.');
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour des coordonnées de la photo:', error);
+      Alert.alert('Erreur', "Impossible de mettre à jour les coordonnées de la photo.");
+    }
+
+    // Désactiver le mode déplaçable
+    setDraggablePhotoId(null);
   }, []);
 
   // Affichage du loader pendant le chargement des données
@@ -405,8 +488,11 @@ export default function MapScreen() {
           <PhotoMarker 
             key={photo.id} 
             photo={photo} 
-            onPress={openPhotoDetails} 
-            markerSize={markerSize} 
+            onPressDetails={handlePressDetails} 
+            onPressEditPosition={handlePressEditPosition}
+            markerSize={markerSize}
+            onDragEnd={handleMarkerDragEnd}
+            draggable={photo.id === draggablePhotoId}
           />
         ))}
       </MapView>
@@ -423,8 +509,8 @@ export default function MapScreen() {
           <ScrollView contentContainerStyle={styles.modalContent}>
             <Text style={styles.modalTitle}>{selectedPhoto.installationName}</Text>
             <PublicImage 
-              storagePath={selectedPhoto.imageUri}  // URL ou chemin Firebase
-              style={styles.modalImage}  // Style de l'image
+              storagePath={selectedPhoto.imageUri}
+              style={styles.modalImage}
             />
             
             <View style={styles.modalFullContent}>
@@ -433,7 +519,7 @@ export default function MapScreen() {
                 <Ionicons name="location-outline" size={22} color="#3498db" style={styles.icon} />
                 <Text style={styles.modalLabel}>Adresse : </Text>
                 <Text style={styles.modalMetadata}>
-                  {selectedPhoto.address || 'Adresse non spécifiée'}
+                  {selectedPhoto.numeroRue || 'Adresse non spécifiée'} {selectedPhoto.rue || 'Adresse non spécifiée'}, {selectedPhoto.ville || 'Adresse non spécifiée'}
                 </Text>
               </View>
           
@@ -453,22 +539,6 @@ export default function MapScreen() {
                 <Text style={styles.modalMetadata}>{selectedPhoto.installationType || 'Non spécifié'}</Text>
               </View>
           
-              {/* Statut */}
-              <View style={styles.row}>
-                <Ionicons name="checkbox-outline" size={22} color={selectedPhoto.installationStatus === 'Installée' ? '#27ae60' : '#e74c3c'} style={styles.icon} />
-                <Text style={styles.modalLabel}>Statut : </Text>
-                <Text style={[styles.modalMetadata, { color: selectedPhoto.installationStatus === 'Installée' ? '#27ae60' : '#e74c3c' }]}>
-                  {selectedPhoto.installationStatus || 'Non spécifié'}
-                </Text>
-              </View>
-          
-              {/* État */}
-              <View style={styles.row}>
-                <Ionicons name="alert-circle-outline" size={22} color="#3498db" style={styles.icon} />
-                <Text style={styles.modalLabel}>État : </Text>
-                <Text style={styles.modalMetadata}>{selectedPhoto.functionalityStatus || 'Non spécifié'}</Text>
-              </View>
-          
               {/* Armoire */}
               <View style={styles.row}>
                 <Ionicons name="timer-outline" size={22} color="#3498db" style={styles.icon} />
@@ -479,7 +549,7 @@ export default function MapScreen() {
               {/* Commentaire */}
               <View style={styles.row}>
                 <Ionicons name="chatbubble-ellipses-outline" size={22} color="#3498db" style={styles.icon} />
-                <Text style={styles.modalLabel}>Commentaire : </Text>
+                <Text style={styles.modalLabel}>Info : </Text>
                 <Text style={styles.modalMetadata}>{selectedPhoto.comment || 'Aucun commentaire'}</Text>
               </View>
 
@@ -505,7 +575,7 @@ export default function MapScreen() {
         style={[
           styles.floatingButton,
           {
-            opacity: fadeFloatingButtonAnim, // Animation d'opacité dédiée
+            opacity: fadeFloatingButtonAnim,
           },
         ]}
       >
@@ -578,25 +648,16 @@ export default function MapScreen() {
 }
 
 const styles = StyleSheet.create({
+  // ... vos styles existants
   container: {
     flex: 1,
     justifyContent: 'center',
   },
-  
   modalContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  fullscreenModalContent: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    height: '80%', // Modifier la hauteur ici (exemple : 80% de l'écran)
-    width: '90%',  // Vous pouvez aussi ajuster la largeur si nécessaire
-    backgroundColor: 'white',  // Facultatif, pour une meilleure visibilité du contenu
-    borderRadius: 15, // Facultatif, pour un aspect plus arrondi
   },
   modalContentFiltre: {
     width: '80%',
@@ -644,62 +705,57 @@ const styles = StyleSheet.create({
   modalContent: {
     padding: 20,
     flexGrow: 1,
-    backgroundColor: '#ffffff',  // Couleur de fond blanc moderne
-    borderRadius: 20,  // Coins arrondis pour un effet plus moderne
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 0,
-    elevation: 5,  // Effet d'ombre pour donner de la profondeur
-    margin: 0,  // Espacement autour du modal
-    zIndex:1,
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    margin: 0,
+    zIndex: 1,
   },
   modalImage: {
     width: '100%',
     height: 250,
-    borderRadius: 15,  // Arrondi des bords de l'image
-    marginBottom: 15,  // Espacement sous l'image
+    borderRadius: 15,
+    marginBottom: 15,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
-    shadowRadius: 8,  // Effet d'ombre léger pour l'image
+    shadowRadius: 8,
   },
   modalTitle: {
-    fontSize: 24,  // Augmentation de la taille du texte pour le titre
+    fontSize: 24,
     fontWeight: 'bold',
-    color: '#34495e',  // Couleur sombre pour une bonne lisibilité
-    marginBottom: 20,  // Espace sous le titre
-    textAlign: 'center',  // Centrage du titre
+    color: '#34495e',
+    marginBottom: 20,
+    textAlign: 'center',
   },
   modalFullContent: {
-    marginTop: 15,  // Espacement supérieur pour le contenu sous l'image
+    marginTop: 15,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 15,  // Espacement entre chaque ligne d'information
-    padding: 10,  // Espacement interne pour une meilleure disposition
-    borderRadius: 10,  // Arrondi des bords pour chaque ligne
-    backgroundColor: '#f7f9fa',  // Couleur de fond douce pour chaque ligne
+    marginBottom: 15,
+    padding: 10,
+    borderRadius: 10,
+    backgroundColor: '#f7f9fa',
   },
   icon: {
-    marginRight: 10,  // Espace entre l'icône et le texte
+    marginRight: 10,
   },
   modalLabel: {
-    fontSize: 18,  // Augmentation de la taille de la police pour les labels
+    fontSize: 18,
     fontWeight: 'bold',
-    color: '#34495e',  // Couleur plus sombre pour les labels
+    color: '#34495e',
   },
   modalMetadata: {
-    fontSize: 16,  // Taille de police standard pour les métadonnées
-    color: '#7f8c8d',  // Couleur gris doux pour les métadonnées
-    flex: 1,  // Prend le reste de l'espace dans la ligne
+    fontSize: 16,
+    color: '#7f8c8d',
+    flex: 1,
   },
   noPhotoText: {
     textAlign: 'center',
     marginVertical: 20,
     fontSize: 16,
-    color: '#7f8c8d',  // Texte gris pour le message de non-sélection de photo
+    color: '#7f8c8d',
   },
   floatingButton: {
     position: 'absolute',
@@ -716,7 +772,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.8,
     shadowRadius: 2,
     elevation: 5,
-    zIndex: 10, // Moins élevé que le BottomSheet
+    zIndex: 10,
   },
   mapToggleButton: {
     position: 'absolute',
@@ -754,7 +810,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 55,
     left: 7,
-    zIndex: 100, // Assurez-vous qu'il est en dessous du BottomSheet mais au-dessus des autres éléments
+    zIndex: 100,
     backgroundColor: '#66b08d',
     borderRadius: 10,
     width: 40,
@@ -770,7 +826,7 @@ const styles = StyleSheet.create({
   detailsButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1b484e',  // Couleur du bouton
+    backgroundColor: '#1b484e',
     padding: 10,
     borderRadius: 8,
     marginTop: 20,
@@ -784,23 +840,55 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-  armoireFilter: {
-    position: 'absolute',
-    top: 250,
-    left: 10,
-    zIndex: 100,
-    backgroundColor: '#ffffff',
+  bottomSheet: {
+    zIndex: 1000,
+    elevation: 20,
+  },
+  calloutContainer: {
+    width: 250,
     padding: 10,
-    borderRadius: 8,
+    backgroundColor: '#fff',
+    borderRadius: 15,
+    alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
   },
-  bottomSheet: {
-    zIndex: 1000, // zIndex élevé pour être au-dessus des autres composants
-    elevation: 20, // elevation élevée pour Android
-    // Suppression de position: 'absolute'
+  calloutImage: {
+    width: 200,
+    height: 200,
+    borderRadius: 10,
+    marginBottom: 8,
+  },
+  calloutTitle: {
+    fontWeight: 'bold',
+    fontSize: 16,
+    color: '#34495e',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  calloutButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginTop: 8,
+  },
+  calloutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#3498db',
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    flex: 1,
+    marginHorizontal: 4,
+    justifyContent: 'center',
+  },
+  calloutButtonText: {
+    color: '#fff',
+    marginLeft: 5,
+    fontSize: 14,
+    fontWeight: 'bold',
   },
 });
