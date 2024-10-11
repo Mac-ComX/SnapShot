@@ -2,8 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   View, 
   Text, 
-  Image, 
-  StyleSheet, 
+  Image,
   FlatList, 
   TouchableOpacity, 
   Modal, 
@@ -34,6 +33,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { db } from '../../services/firebase';
 import PublicImage from '../../components/PublicImage';
+import DetailsArmoireStyle from '../../Styles/DetailsArmoireStyle';
 
 export default function DetailsArmoireScreen({ route }) {
   const { armoire } = route.params;
@@ -244,44 +244,44 @@ export default function DetailsArmoireScreen({ route }) {
   };
 
   const renderHeader = () => (
-    <View style={styles.container}>
+    <View style={DetailsArmoireStyle.container}>
       <TouchableOpacity onPress={() => setIsMainImageFullScreen(true)}>
-        <Text style={styles.title}>{armoire.armoire}</Text> 
+        <Text style={DetailsArmoireStyle.title}>{armoire.armoire}</Text> 
         <PublicImage 
           storagePath={armoire.imageUri}
-          style={styles.largePhoto}
+          style={DetailsArmoireStyle.largePhoto}
         />
       </TouchableOpacity>
-      <View style={styles.infoContainer}>
+      <View style={DetailsArmoireStyle.infoContainer}>
         <MaterialIcons name="location-on" size={24} color="#3498db" />
-        <View style={styles.textContainer}>
-          <Text style={styles.Prebold}>Adresse :</Text>
-          <Text style={styles.metadata} numberOfLines={2} ellipsizeMode="tail">
+        <View style={DetailsArmoireStyle.textContainer}>
+          <Text style={DetailsArmoireStyle.Prebold}>Adresse :</Text>
+          <Text style={DetailsArmoireStyle.metadata} numberOfLines={2} ellipsizeMode="tail">
             {armoire.address || "Non disponible"}
           </Text>
         </View>
       </View>
-      <View style={styles.infoContainer}>
+      <View style={DetailsArmoireStyle.infoContainer}>
         <MaterialIcons name="calendar-today" size={24} color="#3498db" />
-        <Text style={styles.metadata}>
-          <Text style={styles.Prebold}> Date : </Text>{formatDate(armoire.createdAt)}
+        <Text style={DetailsArmoireStyle.metadata}>
+          <Text style={DetailsArmoireStyle.Prebold}> Date : </Text>{formatDate(armoire.createdAt)}
         </Text>
       </View>
-      <View style={styles.infoContainer}>
+      <View style={DetailsArmoireStyle.infoContainer}>
         <MaterialIcons name="door-sliding" size={24} color="#1abc9c" />
-        <Text style={styles.metadata}>
-          <Text style={styles.Prebold}> Armoire : </Text>{armoire.armoire || "Non disponible"}
+        <Text style={DetailsArmoireStyle.metadata}>
+          <Text style={DetailsArmoireStyle.Prebold}> Armoire : </Text>{armoire.armoire || "Non disponible"}
         </Text>
       </View>
-      <View style={styles.infoContainer}>
+      <View style={DetailsArmoireStyle.infoContainer}>
         <MaterialCommunityIcons name="comment-text" size={24} color="#34495e" />
-        <View style={styles.commentSection}>
-          <Text style={styles.Prebold}> Information : </Text>
+        <View style={DetailsArmoireStyle.commentSection}>
+          <Text style={DetailsArmoireStyle.Prebold}> Information : </Text>
           {isEditingComment ? (
-            <View style={styles.commentInputContainer}>
+            <View style={DetailsArmoireStyle.commentInputContainer}>
               <TextInput
                 ref={commentInputRef}
-                style={[styles.commentInput, styles.commentInputActive]}
+                style={[DetailsArmoireStyle.commentInput, DetailsArmoireStyle.commentInputActive]}
                 value={comment}
                 onChangeText={handleCommentChange}
                 placeholder="Modifier le commentaire"
@@ -291,20 +291,20 @@ export default function DetailsArmoireScreen({ route }) {
             </View>
           ) : (
             <TouchableOpacity onPress={() => setIsEditingComment(true)}>
-              <Text style={styles.commentText}>{comment}</Text>
+              <Text style={DetailsArmoireStyle.commentText}>{comment}</Text>
             </TouchableOpacity>
           )}
         </View>
       </View>
-      <TouchableOpacity style={styles.button} onPress={openCamera}>
-        <MaterialIcons name="camera-alt" size={24} color="#fff" style={styles.iconStyle} />
-        <Text style={styles.buttonText}>Ajouter une photo</Text>
+      <TouchableOpacity style={DetailsArmoireStyle.button} onPress={openCamera}>
+        <MaterialIcons name="camera-alt" size={24} color="#fff" style={DetailsArmoireStyle.iconStyle} />
+        <Text style={DetailsArmoireStyle.buttonText}>Ajouter une photo</Text>
       </TouchableOpacity>
-      <Text style={styles.title}>Photos Additionnelles :</Text>
+      <Text style={DetailsArmoireStyle.title}>Photos Additionnelles :</Text>
       {loading ? (
         <Text>Chargement des photos...</Text>
       ) : additionalPhotos.length === 0 ? (
-        <Text style={styles.noDataText}>Aucune photo additionnelle disponible.</Text>
+        <Text style={DetailsArmoireStyle.noDataText}>Aucune photo additionnelle disponible.</Text>
       ) : (
         <FlatList
           data={additionalPhotos}
@@ -317,18 +317,18 @@ export default function DetailsArmoireScreen({ route }) {
             }}>
               <PublicImage 
                 storagePath={item.imageUri}
-                style={styles.additionalPhoto}
+                style={DetailsArmoireStyle.additionalPhoto}
               />
             </TouchableOpacity>
           )}
           scrollEnabled={false}
         />
       )}
-      <Text style={styles.title}>Liste des Installations :</Text>
+      <Text style={DetailsArmoireStyle.title}>Liste des Installations :</Text>
       {loading ? (
         <Text>Chargement des installations...</Text>
       ) : installationList.length === 0 ? (
-        <Text style={styles.noDataText}>Aucune installation trouvée.</Text>
+        <Text style={DetailsArmoireStyle.noDataText}>Aucune installation trouvée.</Text>
       ) : null}
     </View>
   );
@@ -344,15 +344,15 @@ export default function DetailsArmoireScreen({ route }) {
         data={installationList}
         keyExtractor={(item, index) => index.toString()}
         renderItem={({ item }) => (
-          <View style={styles.groupContainer}>
-            <View style={styles.card} key={item.id}>
+          <View style={DetailsArmoireStyle.groupContainer}>
+            <View style={DetailsArmoireStyle.card} key={item.id}>
               <PublicImage 
                 storagePath={item.imageUri}
-                style={styles.cardImage}
+                style={DetailsArmoireStyle.cardImage}
               />
-              <View style={styles.cardContent}>
-                <Text style={styles.cardTitle}>{item.installationName}</Text>
-                <Text style={styles.cardText}>{item.numeroRue} {item.rue}</Text>
+              <View style={DetailsArmoireStyle.cardContent}>
+                <Text style={DetailsArmoireStyle.cardTitle}>{item.installationName}</Text>
+                <Text style={DetailsArmoireStyle.cardText}>{item.numeroRue} {item.rue}</Text>
               </View>
             </View>
           </View>
@@ -363,20 +363,20 @@ export default function DetailsArmoireScreen({ route }) {
             onRefresh={onRefresh}
           />
         }
-        contentContainerStyle={styles.listContainer}
+        contentContainerStyle={DetailsArmoireStyle.listContainer}
       />
-      {error && <Text style={styles.errorText}>{error}</Text>}
+      {error && <Text style={DetailsArmoireStyle.errorText}>{error}</Text>}
       {isAdditionalPhotoModalVisible && selectedAdditionalPhoto && (
         <Modal transparent={true} visible={isAdditionalPhotoModalVisible} animationType="fade">
-          <View style={styles.fullscreenModalOverlay}>
-            <TouchableOpacity style={styles.fullscreenModalClose} onPress={() => setIsAdditionalPhotoModalVisible(false)}>
+          <View style={DetailsArmoireStyle.fullscreenModalOverlay}>
+            <TouchableOpacity style={DetailsArmoireStyle.fullscreenModalClose} onPress={() => setIsAdditionalPhotoModalVisible(false)}>
               <MaterialIcons name="close" size={30} color="#fff" />
             </TouchableOpacity>
-            <View style={styles.fullscreenModalContent}>
-              <Image source={{ uri: selectedAdditionalPhoto.imageUri }} style={styles.fullscreenImage} />
+            <View style={DetailsArmoireStyle.fullscreenModalContent}>
+              <Image source={{ uri: selectedAdditionalPhoto.imageUri }} style={DetailsArmoireStyle.fullscreenImage} />
               {selectedAdditionalPhoto.comment ? (
-                <View style={styles.fullscreenCommentContainer}>
-                  <Text style={styles.fullscreenComment}>{selectedAdditionalPhoto.comment}</Text>
+                <View style={DetailsArmoireStyle.fullscreenCommentContainer}>
+                  <Text style={DetailsArmoireStyle.fullscreenComment}>{selectedAdditionalPhoto.comment}</Text>
                 </View>
               ) : null}
             </View>
@@ -384,19 +384,19 @@ export default function DetailsArmoireScreen({ route }) {
         </Modal>
       )}
       <Modal transparent={true} visible={isMainImageFullScreen} animationType="fade">
-        <View style={styles.fullscreenModalOverlay}>
-          <TouchableOpacity style={styles.fullscreenModalClose} onPress={() => setIsMainImageFullScreen(false)}>
+        <View style={DetailsArmoireStyle.fullscreenModalOverlay}>
+          <TouchableOpacity style={DetailsArmoireStyle.fullscreenModalClose} onPress={() => setIsMainImageFullScreen(false)}>
             <MaterialIcons name="close" size={30} color="#fff" />
           </TouchableOpacity>
-          <View style={styles.fullscreenModalContent}>
-            <Image source={{ uri: armoire.imageUri }} style={styles.fullscreenImage} />
+          <View style={DetailsArmoireStyle.fullscreenModalContent}>
+            <Image source={{ uri: armoire.imageUri }} style={DetailsArmoireStyle.fullscreenImage} />
           </View>
         </View>
       </Modal>
       {isModified && (
-        <View style={styles.footer}>
-          <TouchableOpacity style={styles.saveButton} onPress={saveUpdates}>
-            <Text style={styles.buttonText}>Sauvegarder</Text>
+        <View style={DetailsArmoireStyle.footer}>
+          <TouchableOpacity style={DetailsArmoireStyle.saveButton} onPress={saveUpdates}>
+            <Text style={DetailsArmoireStyle.buttonText}>Sauvegarder</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -407,29 +407,29 @@ export default function DetailsArmoireScreen({ route }) {
           keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
         >
           <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-            <View style={styles.modalOverlay}>
+            <View style={DetailsArmoireStyle.modalOverlay}>
               {capturedPhotoUri && (
-                <Image source={{ uri: capturedPhotoUri }} style={styles.fullscreenImage} />
+                <Image source={{ uri: capturedPhotoUri }} style={DetailsArmoireStyle.fullscreenImage} />
               )}
-              <View style={styles.modalTopButtons}>
-                <Pressable style={styles.iconButton} onPress={() => setModalVisible(false)}>
+              <View style={DetailsArmoireStyle.modalTopButtons}>
+                <Pressable style={DetailsArmoireStyle.iconButton} onPress={() => setModalVisible(false)}>
                   <MaterialIcons name="close" size={34} color="white" />
                 </Pressable>
-                <Pressable style={styles.iconButton} onPress={openCamera}>
+                <Pressable style={DetailsArmoireStyle.iconButton} onPress={openCamera}>
                   <Entypo name="forward" size={34} color="white" />
                 </Pressable>
               </View>
-              <View style={styles.transparentCommentContainer}>
+              <View style={DetailsArmoireStyle.transparentCommentContainer}>
                 <TextInput
                   ref={commentAdditionalInputRef}
-                  style={styles.transparentCommentInput}
+                  style={DetailsArmoireStyle.transparentCommentInput}
                   placeholder="Ajouter un commentaire"
                   placeholderTextColor="rgba(255, 255, 255, 0.7)"
                   value={commentAdditional}
                   onChangeText={setCommentAdditional}
                   multiline
                 />
-                <Pressable style={styles.saveIconInsideInput} onPress={saveAndUploadPhoto}>
+                <Pressable style={DetailsArmoireStyle.saveIconInsideInput} onPress={saveAndUploadPhoto}>
                   <FontAwesome name="send" size={18} color="#fff" /> 
                 </Pressable>
               </View>
@@ -458,328 +458,328 @@ const formatDate = (dateString) => {
   return date.toLocaleDateString('fr-FR', options);
 };
 
-const styles = StyleSheet.create({
-  scrollContainer: {
-    flexGrow: 1,
-    paddingBottom: 20,
-  },
-  container: {
-    flex: 1,
-    padding: 20,
-    backgroundColor: '#f7f8fa',
-  },
-  largePhoto: {
-    width: '100%',
-    height: 450,
-    borderRadius: 15,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 15,
-    elevation: 8,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 15,
-    textAlign: 'center',
-    color: '#1b484e',
-  },
-  infoContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  textContainer: {
-    flex: 1,
-    marginLeft: 10,
-  },
-  Prebold: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginRight: 5,
-  },
-  metadata: {
-    flex: 1,
-    flexWrap: 'wrap',
-    flexShrink: 1,
-    fontSize: 15,
-  },
-  button: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#1abc9c',
-    padding: 15,
-    marginVertical: 10,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 6,
-  },
-  iconStyle: {
-    marginRight: 10,
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  footer: {
-    backgroundColor: '#f7f8fa',
-    padding: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  saveButton: {
-    backgroundColor: '#e63946',
-    padding: 15,
-    borderRadius: 10,
-    alignItems: 'center',
-    width: '100%',
-  },
-  additionalPhoto: {
-    width: 350,
-    height: 150,
-    marginBottom: 30,
-    borderRadius: 10,
-  },
+// const DetailsArmoireStyle = DetailsArmoireStyleheet.create({
+//   scrollContainer: {
+//     flexGrow: 1,
+//     paddingBottom: 20,
+//   },
+//   container: {
+//     flex: 1,
+//     padding: 20,
+//     backgroundColor: '#f7f8fa',
+//   },
+//   largePhoto: {
+//     width: '100%',
+//     height: 450,
+//     borderRadius: 15,
+//     marginBottom: 20,
+//     shadowColor: '#000',
+//     shadowOpacity: 0.2,
+//     shadowRadius: 15,
+//     elevation: 8,
+//   },
+//   title: {
+//     fontSize: 24,
+//     fontWeight: 'bold',
+//     marginBottom: 15,
+//     textAlign: 'center',
+//     color: '#1b484e',
+//   },
+//   infoContainer: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     marginVertical: 10,
+//     paddingHorizontal: 10,
+//     paddingVertical: 8,
+//     backgroundColor: '#ffffff',
+//     borderRadius: 12,
+//     shadowColor: '#000',
+//     shadowOpacity: 0.2,
+//     shadowRadius: 6,
+//     elevation: 3,
+//   },
+//   textContainer: {
+//     flex: 1,
+//     marginLeft: 10,
+//   },
+//   Prebold: {
+//     fontSize: 16,
+//     fontWeight: 'bold',
+//     marginRight: 5,
+//   },
+//   metadata: {
+//     flex: 1,
+//     flexWrap: 'wrap',
+//     flexShrink: 1,
+//     fontSize: 15,
+//   },
+//   button: {
+//     flexDirection: 'row',
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//     backgroundColor: '#1abc9c',
+//     padding: 15,
+//     marginVertical: 10,
+//     borderRadius: 12,
+//     shadowColor: '#000',
+//     shadowOpacity: 0.3,
+//     shadowRadius: 10,
+//     elevation: 6,
+//   },
+//   iconStyle: {
+//     marginRight: 10,
+//   },
+//   buttonText: {
+//     color: '#fff',
+//     fontWeight: 'bold',
+//     fontSize: 16,
+//   },
+//   footer: {
+//     backgroundColor: '#f7f8fa',
+//     padding: 20,
+//     alignItems: 'center',
+//     justifyContent: 'center',
+//   },
+//   saveButton: {
+//     backgroundColor: '#e63946',
+//     padding: 15,
+//     borderRadius: 10,
+//     alignItems: 'center',
+//     width: '100%',
+//   },
+//   additionalPhoto: {
+//     width: 350,
+//     height: 150,
+//     marginBottom: 30,
+//     borderRadius: 10,
+//   },
   
-  // Styles pour la liste des installations
-  listContainer: {
-    paddingVertical: 10,
-  },
-  card: {
-    flexDirection: 'row',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    marginVertical: 8,
-    marginHorizontal: 10,
-    shadowColor: '#000',
-    shadowOpacity: 0.3,
-    shadowRadius: 10,    
-    elevation: 5,        
-    overflow: 'hidden',
-  },
-  groupContainer: {
-    marginBottom: 2,
-  },
-  groupTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginVertical: 10,
-  },
-  cardImage: {
-    width: 100,
-    height: 100,
-  },
-  cardContent: {
-    flex: 1,
-    padding: 10,
-    justifyContent: 'center',
-  },
-  cardTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#2c3e50',
-    bottom:20,
-  },
-  cardText:{
-    color: '#3498db',
-    bottom:10,
-  },
-  noDataText: {
-    textAlign: 'center',
-    color: '#7f8c8d',
-    fontSize: 16,
-    marginTop: 0,
-    marginBottom: 15,
-  },
-  fullscreenModalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.9)', 
-  },
-  fullscreenImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'contain', 
-  },
-  fullscreenModalClose: {
-    position: 'absolute',
-    top: 40,
-    right: 20,
-    zIndex: 1,
-  },
-  fullscreenModalContent: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  fullscreenCommentContainer: {
-    position: 'absolute',
-    bottom: 100,
-    left: 20,
-    right: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    borderRadius: 20,
-    padding: 10,
-  },
-  fullscreenComment: {
-    fontSize: 16,
-    color: '#fff',
-    textAlign: 'center',
-  },
-  modalTopButtons: {
-    position: 'absolute',
-    top: 40,
-    left: 20,
-    right: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    zIndex: 2,
-  },
-  iconButton: {
-    backgroundColor: 'rgba(27, 72, 78, 0.7)',
-    padding: 10,
-    borderRadius: 30,
-    shadowColor: '#000',
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 8,
-  },
-  transparentCommentContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 15,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.0)',
-  },
-  transparentCommentInput: {
-    flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.4)',
-    borderRadius: 40,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    fontSize: 16,
-    marginRight: 0,
-    color: '#fff',
-  },
-  saveIconInsideInput: {
-    height:42,
-    width:42,
-    backgroundColor: '#1b484e',
-    margin: 5,
-    borderRadius: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    overflow: 'hidden',
-  },
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 20,
-    width: '80%',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    color: '#1b484e',
-  },
-  modalOption: {
-    padding: 15,
-    width: '100%',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  modalText: {
-    fontSize: 16,
-    color: '#34495e',
-  },
-  optionActive: {
-    backgroundColor: '#e0f7fa',
-    borderRadius: 10,
-  },
-  modalCloseButton: {
-    marginTop: 20,
-    padding: 12,
-    backgroundColor: '#e0e0e0',
-    borderRadius: 8,
-    width: '100%',
-    alignItems: 'center',
-  },
-  modalCloseText: {
-    fontSize: 16,
-    color: '#333',
-  },
-  commentContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    padding: 15,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-  commentSection: {
-    flex: 1,
-    marginLeft: 10,
-  },
-  commentText: {
-    fontSize: 16,
-    color: '#34495e',
-  },
-  commentInputContainer: {
-    borderWidth: 1,
-    borderColor: '#1abc9c',
-    borderRadius: 40,
-    padding: 2,
-  },
-  commentInput: {
-    flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
-    borderRadius: 40,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: '#34495e',
-  },
-  commentInputActive: {},
-  errorText: {
-    color: 'red',
-    textAlign: 'center',
-    marginTop: 10,
-  },
-});
+//   // DetailsArmoireStyle pour la liste des installations
+//   listContainer: {
+//     paddingVertical: 10,
+//   },
+//   card: {
+//     flexDirection: 'row',
+//     backgroundColor: '#fff',
+//     borderRadius: 12,
+//     marginVertical: 8,
+//     marginHorizontal: 10,
+//     shadowColor: '#000',
+//     shadowOpacity: 0.3,
+//     shadowRadius: 10,    
+//     elevation: 5,        
+//     overflow: 'hidden',
+//   },
+//   groupContainer: {
+//     marginBottom: 2,
+//   },
+//   groupTitle: {
+//     fontSize: 20,
+//     fontWeight: 'bold',
+//     marginVertical: 10,
+//   },
+//   cardImage: {
+//     width: 100,
+//     height: 100,
+//   },
+//   cardContent: {
+//     flex: 1,
+//     padding: 10,
+//     justifyContent: 'center',
+//   },
+//   cardTitle: {
+//     fontSize: 13,
+//     fontWeight: '600',
+//     color: '#2c3e50',
+//     bottom:20,
+//   },
+//   cardText:{
+//     color: '#3498db',
+//     bottom:10,
+//   },
+//   noDataText: {
+//     textAlign: 'center',
+//     color: '#7f8c8d',
+//     fontSize: 16,
+//     marginTop: 0,
+//     marginBottom: 15,
+//   },
+//   fullscreenModalOverlay: {
+//     flex: 1,
+//     backgroundColor: 'rgba(0, 0, 0, 0.9)', 
+//   },
+//   fullscreenImage: {
+//     width: '100%',
+//     height: '100%',
+//     resizeMode: 'contain', 
+//   },
+//   fullscreenModalClose: {
+//     position: 'absolute',
+//     top: 40,
+//     right: 20,
+//     zIndex: 1,
+//   },
+//   fullscreenModalContent: {
+//     flex: 1,
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//   },
+//   fullscreenCommentContainer: {
+//     position: 'absolute',
+//     bottom: 100,
+//     left: 20,
+//     right: 20,
+//     backgroundColor: 'rgba(0, 0, 0, 0.6)',
+//     borderRadius: 20,
+//     padding: 10,
+//   },
+//   fullscreenComment: {
+//     fontSize: 16,
+//     color: '#fff',
+//     textAlign: 'center',
+//   },
+//   modalTopButtons: {
+//     position: 'absolute',
+//     top: 40,
+//     left: 20,
+//     right: 20,
+//     flexDirection: 'row',
+//     justifyContent: 'space-between',
+//     zIndex: 2,
+//   },
+//   iconButton: {
+//     backgroundColor: 'rgba(27, 72, 78, 0.7)',
+//     padding: 10,
+//     borderRadius: 30,
+//     shadowColor: '#000',
+//     shadowOpacity: 0.3,
+//     shadowRadius: 10,
+//     elevation: 8,
+//   },
+//   transparentCommentContainer: {
+//     position: 'absolute',
+//     bottom: 0,
+//     left: 0,
+//     right: 0,
+//     padding: 15,
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     backgroundColor: 'rgba(0, 0, 0, 0.0)',
+//   },
+//   transparentCommentInput: {
+//     flex: 1,
+//     backgroundColor: 'rgba(255, 255, 255, 0.4)',
+//     borderRadius: 40,
+//     paddingHorizontal: 20,
+//     paddingVertical: 12,
+//     fontSize: 16,
+//     marginRight: 0,
+//     color: '#fff',
+//   },
+//   saveIconInsideInput: {
+//     height:42,
+//     width:42,
+//     backgroundColor: '#1b484e',
+//     margin: 5,
+//     borderRadius: 30,
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//   },
+//   modalOverlay: {
+//     flex: 1,
+//     backgroundColor: 'rgba(0, 0, 0, 0.75)',
+//     borderTopLeftRadius: 20,
+//     borderTopRightRadius: 20,
+//     overflow: 'hidden',
+//   },
+//   modalContainer: {
+//     flex: 1,
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//   },
+//   modalContent: {
+//     backgroundColor: '#fff',
+//     borderRadius: 10,
+//     padding: 20,
+//     width: '80%',
+//     alignItems: 'center',
+//     shadowColor: '#000',
+//     shadowOpacity: 0.25,
+//     shadowRadius: 10,
+//     elevation: 5,
+//   },
+//   modalTitle: {
+//     fontSize: 18,
+//     fontWeight: 'bold',
+//     marginBottom: 20,
+//     color: '#1b484e',
+//   },
+//   modalOption: {
+//     padding: 15,
+//     width: '100%',
+//     alignItems: 'center',
+//     borderBottomWidth: 1,
+//     borderBottomColor: '#eee',
+//   },
+//   modalText: {
+//     fontSize: 16,
+//     color: '#34495e',
+//   },
+//   optionActive: {
+//     backgroundColor: '#e0f7fa',
+//     borderRadius: 10,
+//   },
+//   modalCloseButton: {
+//     marginTop: 20,
+//     padding: 12,
+//     backgroundColor: '#e0e0e0',
+//     borderRadius: 8,
+//     width: '100%',
+//     alignItems: 'center',
+//   },
+//   modalCloseText: {
+//     fontSize: 16,
+//     color: '#333',
+//   },
+//   commentContainer: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     backgroundColor: 'rgba(255, 255, 255, 0.8)',
+//     padding: 15,
+//     borderTopLeftRadius: 20,
+//     borderTopRightRadius: 20,
+//     shadowColor: '#000',
+//     shadowOpacity: 0.1,
+//     shadowRadius: 10,
+//     elevation: 5,
+//   },
+//   commentSection: {
+//     flex: 1,
+//     marginLeft: 10,
+//   },
+//   commentText: {
+//     fontSize: 16,
+//     color: '#34495e',
+//   },
+//   commentInputContainer: {
+//     borderWidth: 1,
+//     borderColor: '#1abc9c',
+//     borderRadius: 40,
+//     padding: 2,
+//   },
+//   commentInput: {
+//     flex: 1,
+//     backgroundColor: 'rgba(255, 255, 255, 0.7)',
+//     borderRadius: 40,
+//     paddingHorizontal: 20,
+//     paddingVertical: 12,
+//     fontSize: 16,
+//     color: '#34495e',
+//   },
+//   commentInputActive: {},
+//   errorText: {
+//     color: 'red',
+//     textAlign: 'center',
+//     marginTop: 10,
+//   },
+// });

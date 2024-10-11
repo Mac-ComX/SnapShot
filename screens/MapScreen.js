@@ -1,31 +1,40 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+// screens/MapScreen.js
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'; 
 import { 
   View, 
-  Text, 
-  StyleSheet, 
+  Text,
   ActivityIndicator, 
   TouchableOpacity, 
   Alert, 
   Dimensions, 
   Animated, 
-  ScrollView,
   Modal,
   Image,
   Linking,
-  Platform
+  Platform,
+  Easing,
+  TextInput,
+  FlatList,
+  KeyboardAvoidingView,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from 'react-native';
-import MapView, { Marker, Callout } from 'react-native-maps';
+import MapView, { Marker, Callout, Camera } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import { collection, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../services/firebase';
-import { useNavigation } from '@react-navigation/native';
-import BottomSheet from '@gorhom/bottom-sheet';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import SvgCircle from '../components/svg/SvgCircle';
 import PublicImage from '../components/PublicImage';
+import MapStyle from '../Styles/MapStyle';
 import { Picker } from '@react-native-picker/picker';
 
-const { height } = Dimensions.get('window');
+// Importez votre image de logo ici
+import LogoImage from '../assets/logoUser.jpg'; // Assurez-vous que le chemin est correct
+
+const { height, width } = Dimensions.get('window');
 
 // Fonction pour calculer la distance entre deux coordonnées GPS
 const calculateDistance = (coord1, coord2) => {
@@ -63,7 +72,7 @@ const formatDate = (date) => {
 };
 
 // Composant de marqueur optimisé avec React.memo
-const PhotoMarker = React.memo(({ photo, onPressDetails, onPressEditPosition, markerSize, onDragEnd, draggable }) => {
+const PhotoMarker = React.memo(({ photo, onPressDetails, onPressEditPosition, markerSize, onDragEnd, draggable, isHighlighted }) => {
   const borderColor = useMemo(() => {
     if (photo.installationType === 'Armoire') { 
       return 'black'; // Couleur noire pour les armoires
@@ -74,6 +83,28 @@ const PhotoMarker = React.memo(({ photo, onPressDetails, onPressEditPosition, ma
     }
     return '#ffffff'; // Couleur par défaut
   }, [photo.functionalityStatus, photo.installationType]);
+
+  // Animation pour le marqueur mis en évidence
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (isHighlighted) {
+      Animated.sequence([
+        Animated.timing(scaleAnim, {
+          toValue: 1.5,
+          duration: 500,
+          easing: Easing.ease,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scaleAnim, {
+          toValue: 1,
+          duration: 500,
+          easing: Easing.ease,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [isHighlighted, scaleAnim]);
 
   // Fonction pour ouvrir l'application GPS
   const handleNavigateToMarker = () => {
@@ -109,37 +140,41 @@ const PhotoMarker = React.memo(({ photo, onPressDetails, onPressEditPosition, ma
       draggable={draggable}
       onDragEnd={(e) => onDragEnd(photo, e.nativeEvent.coordinate)}
     >
-      <PublicImage 
-        storagePath={photo.imageUri}
-        style={[
-          styles.markerImage,
-          {
-            width: markerSize,
-            height: markerSize,
-            borderColor,
-          },
-        ]}
-      />
+      <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+        <PublicImage 
+          storagePath={photo.imageUri}
+          style={[
+            MapStyle.markerImage,
+            {
+              width: markerSize,
+              height: markerSize,
+              borderColor,
+            },
+          ]}
+        />
+      </Animated.View>
       <Callout tooltip>
-        <View style={styles.calloutContainer}>
+        <View style={MapStyle.calloutContainer}>
           {/* Image de l'installation */}
           <PublicImage
             storagePath={photo.imageUri}
-            style={styles.calloutImage}
+            style={MapStyle.calloutImage}
           />
-          <Text style={styles.calloutTitle}>{photo.rue || photo.installationName}</Text>
-          <View style={styles.calloutButtonsContainer}>
-            <TouchableOpacity style={styles.calloutButton} onPress={() => onPressDetails(photo)}>
-              <Ionicons name="information-circle-outline" size={20} color="#fff" />
-              <Text style={styles.calloutButtonText}>Détails</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.calloutButton} onPress={() => onPressEditPosition(photo)}>
+          <Text style={MapStyle.calloutTitle}>{photo.rue || photo.installationName}</Text>
+          <View style={MapStyle.calloutButtonsContainer}>
+            <View style={MapStyle.calloutButtonsRow}>
+              <TouchableOpacity style={MapStyle.calloutButton} onPress={() => onPressDetails(photo)}>
+                <Ionicons name="information-circle-outline" size={20} color="#fff" />
+                <Text style={MapStyle.calloutButtonText}>Détails</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={MapStyle.calloutButton} onPress={handleNavigateToMarker}>
+                <Ionicons name="navigate-outline" size={20} color="#fff" />
+                <Text style={MapStyle.calloutButtonText}>GPS</Text>
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity style={MapStyle.calloutButtonFullWidth} onPress={() => onPressEditPosition(photo)}>
               <Ionicons name="map-outline" size={20} color="#fff" />
-              <Text style={styles.calloutButtonText}>Modifier</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.calloutButton} onPress={handleNavigateToMarker}>
-              <Ionicons name="navigate-outline" size={20} color="#fff" />
-              <Text style={styles.calloutButtonText}>GPS</Text>
+              <Text style={MapStyle.calloutButtonText}>Modifier la position</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -159,10 +194,15 @@ export default function MapScreen() {
   const [selectedArmoire, setSelectedArmoire] = useState('Toutes');
   const [modalVisible, setModalVisible] = useState(false);
   const [draggablePhotoId, setDraggablePhotoId] = useState(null); // État pour le marqueur déplaçable
+  const [highlightedMarkerId, setHighlightedMarkerId] = useState(null); // État pour le marqueur à mettre en évidence
+
+  // Nouvel État pour la Barre de Recherche
+  const [searchQuery, setSearchQuery] = useState('');
 
   const sheetRef = useRef(null);
   const mapRef = useRef(null);
   const navigation = useNavigation();
+  const route = useRoute(); // Accéder aux paramètres de navigation
   const TOLERANCE_RADIUS = 20;
 
   // Animations pour les autres boutons
@@ -172,7 +212,7 @@ export default function MapScreen() {
   // Animation pour le bouton flottant
   const fadeFloatingButtonAnim = useRef(new Animated.Value(1)).current;
 
-  const snapPoints = useMemo(() => [height * 0.1, height * 0.45, height * 0.90], [height]);
+  const snapPoints = useMemo(() => [height * 0.12, height * 0.45, height * 0.90], [height]);
 
   const hasSetInitialRegionRef = useRef(false);
   const initialLocationRef = useRef(null);
@@ -204,7 +244,7 @@ export default function MapScreen() {
           latitudeDelta: 0.005,
           longitudeDelta: 0.005,
         };
-        mapRef.current.animateToRegion(initialRegion, 1000);
+        mapRef.current.animateCamera({ center: initialRegion }, { duration: 1000, easing: Easing.ease });
         hasSetInitialRegionRef.current = true;
       }
 
@@ -212,7 +252,7 @@ export default function MapScreen() {
 
       // Abonnement aux mises à jour de la localisation
       locationSubscription = await Location.watchPositionAsync(
-        { accuracy: Location.Accuracy.Highest, timeInterval: 5000, distanceInterval: 3 },
+        { accuracy: Location.Accuracy.Highest, timeInterval: 5000, distanceInterval: 5 },
         (newLocation) => {
           const { coords: newCoords } = newLocation;
 
@@ -230,7 +270,7 @@ export default function MapScreen() {
                 latitudeDelta: mapRef.current.getCamera().latitudeDelta || 0.00922,
                 longitudeDelta: mapRef.current.getCamera().longitudeDelta || 0.00421,
               };
-              mapRef.current.animateToRegion(newRegion, 1000);
+              mapRef.current.animateCamera({ center: newRegion }, { duration: 1000, easing: Easing.ease });
               initialLocationRef.current = newCoords;
             }
           }
@@ -266,11 +306,46 @@ export default function MapScreen() {
     };
   }, []);
 
-  // Fonction pour filtrer les photos par armoire
+  // Gestion des paramètres de navigation pour centrer sur un marqueur spécifique
+  useEffect(() => {
+    const { targetLatitude, targetLongitude, targetPhotoId } = route.params || {};
+
+    if (targetLatitude && targetLongitude && targetPhotoId) {
+      // Centrer et zoomer sur le marqueur spécifique avec animation fluide
+      if (mapRef.current) {
+        const specificCamera = {
+          center: {
+            latitude: targetLatitude,
+            longitude: targetLongitude,
+          },
+          pitch: 0,
+          heading: 0,
+          altitude: 1000,
+          zoom: 17,
+        };
+        mapRef.current.animateCamera(specificCamera, { duration: 2000, easing: Easing.ease });
+      }
+
+      // Mettre en évidence le marqueur spécifique
+      setHighlightedMarkerId(targetPhotoId);
+    }
+  }, [route.params]);
+
+  // Fonction pour filtrer les photos par armoire et recherche
   const filteredPhotos = useMemo(() => {
-    if (selectedArmoire === 'Toutes') return photos;
-    return photos.filter(photo => (photo.armoire || 'Non spécifié') === selectedArmoire);
-  }, [selectedArmoire, photos]);
+    let result = photos;
+    if (selectedArmoire !== 'Toutes') {
+      result = result.filter(photo => (photo.armoire || 'Non spécifié') === selectedArmoire);
+    }
+    if (searchQuery.trim() !== '') {
+      const query = searchQuery.trim().toLowerCase();
+      result = result.filter(photo => 
+        (photo.installationName && photo.installationName.toLowerCase().includes(query)) ||
+        (photo.armoire && photo.armoire.toLowerCase().includes(query))
+      );
+    }
+    return result;
+  }, [selectedArmoire, photos, searchQuery]);
 
   // Fonction pour ouvrir les détails d'une photo
   const handlePressDetails = useCallback((photo) => {
@@ -279,7 +354,7 @@ export default function MapScreen() {
 
     setTimeout(() => {
       setSelectedPhoto(photo); // Définir la nouvelle sélection
-      sheetRef.current?.snapToIndex(1); // Ouvrir le BottomSheet avec les nouvelles données
+      sheetRef.current?.snapToIndex(2); // Ouvrir le BottomSheet au niveau maximal pour les détails
     }, 300); // Attendre un court instant pour éviter un bug de mise à jour
   }, []);
 
@@ -301,17 +376,40 @@ export default function MapScreen() {
             latitude: currentLocation.coords.latitude,
             longitude: currentLocation.coords.longitude,
           },
-          zoom: 17,
           pitch: 0,
+          heading: 0,
           altitude: 1000,
+          zoom: 17,
         };
-        mapRef.current.animateCamera(camera, { duration: 3000 });
+        mapRef.current.animateCamera(camera, { duration: 3000, easing: Easing.ease });
       }
     } catch (error) {
       console.error('Erreur lors de la récupération de la position actuelle:', error);
       Alert.alert('Erreur', 'Impossible de récupérer la position actuelle.');
     }
   }, []);
+
+  // Fonction pour centrer la carte sur l'armoire sélectionnée
+  const goToArmoireLocation = useCallback(() => {
+    if (selectedArmoire !== 'Toutes') {
+      const armoirePhoto = photos.find(photo => (photo.armoire || 'Non spécifié') === selectedArmoire);
+      if (armoirePhoto && mapRef.current) {
+        const camera = {
+          center: {
+            latitude: armoirePhoto.latitude,
+            longitude: armoirePhoto.longitude,
+          },
+          pitch: 0,
+          heading: 0,
+          altitude: 1000,
+          zoom: 17,
+        };
+        mapRef.current.animateCamera(camera, { duration: 2000, easing: Easing.ease });
+      } else {
+        Alert.alert('Erreur', 'Aucune armoire trouvée avec ce nom.');
+      }
+    }
+  }, [selectedArmoire, photos]);
 
   // Fonction pour changer le type de carte
   const toggleMapType = useCallback(() => {
@@ -321,6 +419,12 @@ export default function MapScreen() {
   // Fonction pour gérer l'affichage du modal de filtre
   const toggleFilterModal = () => {
     setModalVisible(!modalVisible);
+  };
+
+  // Fonction pour appliquer le filtre et centrer sur l'armoire
+  const applyFilter = () => {
+    toggleFilterModal();
+    goToArmoireLocation();
   };
 
   // Fonction pour calculer la taille des marqueurs en fonction du niveau de zoom
@@ -360,11 +464,13 @@ export default function MapScreen() {
         Animated.timing(fadeAnim, {
           toValue: 0,
           duration: 300,
+          easing: Easing.ease,
           useNativeDriver: true,
         }),
         Animated.timing(translateYAnim, {
           toValue: -30,
           duration: 300,
+          easing: Easing.ease,
           useNativeDriver: true,
         }),
       ]).start();
@@ -373,16 +479,23 @@ export default function MapScreen() {
         Animated.timing(fadeAnim, {
           toValue: 1,
           duration: 300,
+          easing: Easing.ease,
           useNativeDriver: true,
         }),
         Animated.timing(translateYAnim, {
           toValue: 0,
           duration: 300,
+          easing: Easing.ease,
           useNativeDriver: true,
         }),
       ]).start();
     }
-  }, [fadeFloatingButtonAnim, fadeAnim, translateYAnim]);
+
+    // Fermer le clavier si le BottomSheet est réduit
+    if (index < snapPoints.length - 1) {
+      Keyboard.dismiss();
+    }
+  }, [fadeFloatingButtonAnim, fadeAnim, translateYAnim, snapPoints.length]);
 
   // Gestion des interactions utilisateur avec la carte
   const handleUserInteractionStart = useCallback(() => {
@@ -421,10 +534,37 @@ export default function MapScreen() {
     setDraggablePhotoId(null);
   }, []);
 
+  // Fonction pour gérer le clic sur la carte (hors des marqueurs)
+  const handleMapPress = useCallback(() => {
+    if (selectedPhoto) {
+      setSelectedPhoto(null); // Réinitialiser la sélection
+      sheetRef.current?.snapToIndex(0); // Ouvrir le BottomSheet au niveau de la barre de recherche
+    }
+  }, [selectedPhoto]);
+
+  // Fonction pour gérer le focus sur le champ de recherche
+  const handleSearchFocus = () => {
+    sheetRef.current?.snapToIndex(2); // Ouvrir le BottomSheet au niveau maximal
+  };
+
+  // Fonction pour gérer la perte de focus sur le champ de recherche
+  const handleSearchBlur = () => {
+    if (searchQuery.trim() === '') {
+      sheetRef.current?.snapToIndex(0); // Réduire le BottomSheet si la recherche est vide
+    }
+  };
+
+  // Effet pour fermer le clavier lorsque le BottomSheet est réduit
+  useEffect(() => {
+    if (bottomSheetIndex === 0) {
+      Keyboard.dismiss();
+    }
+  }, [bottomSheetIndex]);
+
   // Affichage du loader pendant le chargement des données
   if (loading || !location) {
     return (
-      <View style={styles.loadingContainer}>
+      <View style={MapStyle.loadingContainer}>
         <ActivityIndicator size="large" color="#0000ff" />
         <Text>Chargement de la carte...</Text>
       </View>
@@ -440,11 +580,11 @@ export default function MapScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={MapStyle.container}>
       {/* Bouton Menu */}
       <Animated.View
         style={[
-          styles.menuButton,
+          MapStyle.menuButton,
           {
             opacity: fadeAnim,
             transform: [{ translateY: translateYAnim }],
@@ -459,7 +599,7 @@ export default function MapScreen() {
       {/* Carte */}
       <MapView
         ref={mapRef}
-        style={styles.map}
+        style={MapStyle.map}
         initialRegion={initialRegion}
         mapType={mapType}
         pitchEnabled={true}
@@ -470,6 +610,7 @@ export default function MapScreen() {
         onTouchStart={handleUserInteractionStart}
         onTouchEnd={handleUserInteractionEnd}
         onMarkerPress={handleUserInteractionStart}
+        onPress={handleMapPress} // Gestion du clic sur la carte
       >
 
         {/* Marqueur de l'utilisateur */}
@@ -493,101 +634,202 @@ export default function MapScreen() {
             markerSize={markerSize}
             onDragEnd={handleMarkerDragEnd}
             draggable={photo.id === draggablePhotoId}
+            isHighlighted={photo.id === highlightedMarkerId} // Passer la prop isHighlighted
           />
         ))}
+
+        {/* Marqueur spécifique à partir des paramètres de navigation */}
+        {highlightedMarkerId && (() => {
+          const specificPhoto = photos.find(photo => photo.id === highlightedMarkerId);
+          if (specificPhoto) {
+            return (
+              <Marker
+                coordinate={{ latitude: specificPhoto.latitude, longitude: specificPhoto.longitude }}
+                pinColor="blue" // Mettre en évidence le marqueur avec une couleur différente
+              >
+                <Callout tooltip>
+                  <View style={MapStyle.calloutContainer}>
+                    <PublicImage
+                      storagePath={specificPhoto.imageUri}
+                      style={MapStyle.calloutImage}
+                    />
+                    <Text style={MapStyle.calloutTitle}>{specificPhoto.rue || specificPhoto.installationName}</Text>
+                    <View style={MapStyle.calloutButtonsContainer}>
+                      <View style={MapStyle.calloutButtonsRow}>
+                        <TouchableOpacity style={MapStyle.calloutButton} onPress={() => handlePressDetails(specificPhoto)}>
+                          <Ionicons name="information-circle-outline" size={20} color="#fff" />
+                          <Text style={MapStyle.calloutButtonText}>Détails</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={MapStyle.calloutButton} onPress={() => {
+                          // Naviguer vers DetailsScreen pour ce marqueur
+                          navigation.navigate('DetailsScreen', { photo: specificPhoto });
+                        }}>
+                          <Ionicons name="navigate-outline" size={20} color="#fff" />
+                          <Text style={MapStyle.calloutButtonText}>GPS</Text>
+                        </TouchableOpacity>
+                      </View>
+                      <TouchableOpacity style={MapStyle.calloutButtonFullWidth} onPress={() => handlePressEditPosition(specificPhoto)}>
+                        <Ionicons name="map-outline" size={20} color="#fff" />
+                        <Text style={MapStyle.calloutButtonText}>Modifier la position</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </Callout>
+              </Marker>
+            );
+          }
+          return null;
+        })()}
       </MapView>
 
-      {/* BottomSheet pour les détails de la photo */}
+      {/* BottomSheet pour la barre de recherche ou les détails de la photo */}
       <BottomSheet
         ref={sheetRef}
         snapPoints={snapPoints}
         index={0}
         onChange={handleBottomSheetChange}
-        style={styles.bottomSheet}
+        style={MapStyle.bottomSheet}
+        handleIndicatorStyle={MapStyle.handleIndicator} // Style pour l'indicateur du BottomSheet
       >
-        {selectedPhoto ? (
-          <ScrollView contentContainerStyle={styles.modalContent}>
-            <Text style={styles.modalTitle}>{selectedPhoto.installationName}</Text>
-            <PublicImage 
-              storagePath={selectedPhoto.imageUri}
-              style={styles.modalImage}
-            />
-            
-            <View style={styles.modalFullContent}>
-              {/* Adresse */}
-              <View style={styles.row}>
-                <Ionicons name="location-outline" size={22} color="#3498db" style={styles.icon} />
-                <Text style={styles.modalLabel}>Adresse : </Text>
-                <Text style={styles.modalMetadata}>
-                  {selectedPhoto.numeroRue || 'Adresse non spécifiée'} {selectedPhoto.rue || 'Adresse non spécifiée'}, {selectedPhoto.ville || 'Adresse non spécifiée'}
-                </Text>
-              </View>
-          
-              {/* Date */}
-              <View style={styles.row}>
-                <Ionicons name="calendar-outline" size={22} color="#3498db" style={styles.icon} />
-                <Text style={styles.modalLabel}>Date : </Text>
-                <Text style={styles.modalMetadata}>
-                  {selectedPhoto?.createdAt ? formatDate(parseDateTimeString(selectedPhoto.createdAt)) : 'Date non spécifiée'}
-                </Text>
-              </View>
-          
-              {/* Type */}
-              <View style={styles.row}>
-                <Ionicons name="build-outline" size={22} color="#3498db" style={styles.icon} />
-                <Text style={styles.modalLabel}>Type : </Text>
-                <Text style={styles.modalMetadata}>{selectedPhoto.installationType || 'Non spécifié'}</Text>
-              </View>
-          
-              {/* Armoire */}
-              <View style={styles.row}>
-                <Ionicons name="timer-outline" size={22} color="#3498db" style={styles.icon} />
-                <Text style={styles.modalLabel}>Armoire : </Text>
-                <Text style={styles.modalMetadata}>{selectedPhoto.armoire || 'Non spécifié'}</Text>
-              </View>
-          
-              {/* Commentaire */}
-              <View style={styles.row}>
-                <Ionicons name="chatbubble-ellipses-outline" size={22} color="#3498db" style={styles.icon} />
-                <Text style={styles.modalLabel}>Info : </Text>
-                <Text style={styles.modalMetadata}>{selectedPhoto.comment || 'Aucun commentaire'}</Text>
-              </View>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1 }}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+        >
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            {selectedPhoto ? (
+              // Affichage des détails de l'installation lorsqu'un marqueur est sélectionné
+              <BottomSheetScrollView contentContainerStyle={MapStyle.modalContent}>
+                <Text style={MapStyle.modalTitle}>{selectedPhoto.installationName}</Text>
+                <PublicImage 
+                  storagePath={selectedPhoto.imageUri}
+                  style={MapStyle.modalImage}
+                />
+                
+                <View style={MapStyle.modalFullContent}>
+                  {/* Adresse */}
+                  <View style={MapStyle.row}>
+                    <Ionicons name="location-outline" size={22} color="#3498db" style={MapStyle.icon} />
+                    <Text style={MapStyle.modalLabel}>Adresse : </Text>
+                    <Text style={MapStyle.modalMetadata}>
+                      {selectedPhoto.numeroRue || 'Adresse non spécifiée'} {selectedPhoto.rue || 'Adresse non spécifiée'}, {selectedPhoto.ville || 'Adresse non spécifiée'}
+                    </Text>
+                  </View>
+              
+                  {/* Date */}
+                  <View style={MapStyle.row}>
+                    <Ionicons name="calendar-outline" size={22} color="#3498db" style={MapStyle.icon} />
+                    <Text style={MapStyle.modalLabel}>Date : </Text>
+                    <Text style={MapStyle.modalMetadata}>
+                      {selectedPhoto?.createdAt ? formatDate(parseDateTimeString(selectedPhoto.createdAt)) : 'Date non spécifiée'}
+                    </Text>
+                  </View>
+              
+                  {/* Type */}
+                  <View style={MapStyle.row}>
+                    <Ionicons name="build-outline" size={22} color="#3498db" style={MapStyle.icon} />
+                    <Text style={MapStyle.modalLabel}>Type : </Text>
+                    <Text style={MapStyle.modalMetadata}>{selectedPhoto.installationType || 'Non spécifié'}</Text>
+                  </View>
+              
+                  {/* Armoire */}
+                  <View style={MapStyle.row}>
+                    <Ionicons name="browsers-outline" size={22} color="#3498db" style={MapStyle.icon} />
+                    <Text style={MapStyle.modalLabel}>Armoire : </Text>
+                    <Text style={MapStyle.modalMetadata}>{selectedPhoto.armoire || 'Non spécifié'}</Text>
+                  </View>
+              
+                  {/* Commentaire */}
+                  <View style={MapStyle.row}>
+                    <Ionicons name="chatbox-ellipses-outline" size={22} color="#3498db" style={MapStyle.icon} />
+                    <Text style={MapStyle.modalLabel}>Info : </Text>
+                    <Text style={MapStyle.modalMetadata}>{selectedPhoto.comment || 'Aucun commentaire'}</Text>
+                  </View>
 
-              {/* Bouton pour naviguer vers DetailsScreen.js */}
-              <TouchableOpacity 
-                style={styles.detailsButton} 
-                onPress={() => {
-                  navigation.navigate('DetailsScreen', { photo: selectedPhoto });
-                }}
-              >
-                <Ionicons name="information-circle-outline" size={24} color="#fff" style={styles.detailsIcon} />
-                <Text style={styles.detailsButtonText}>Voir les détails</Text>
-              </TouchableOpacity>
-            </View>
-          </ScrollView>
-        ) : (
-          <Text style={styles.noPhotoText}>Aucune photo sélectionnée</Text>
-        )}
+                  {/* Bouton pour naviguer vers DetailsScreen.js */}
+                  <TouchableOpacity 
+                    style={MapStyle.detailsButton} 
+                    onPress={() => {
+                      navigation.navigate('DetailsScreen', { photo: selectedPhoto });
+                    }}
+                  >
+                    <Ionicons name="information-circle-outline" size={24} color="#fff" style={MapStyle.detailsIcon} />
+                    <Text style={MapStyle.detailsButtonText}>Voir les détails</Text>
+                  </TouchableOpacity>
+                </View>
+              </BottomSheetScrollView>
+            ) : (
+              // Affichage de la barre de recherche et des résultats de recherche lorsque aucun marqueur n'est sélectionné
+              <View style={MapStyle.searchContainer}>
+                {/* Conteneur Parent pour aligner le champ de recherche et le logo */}
+                <View style={MapStyle.searchInputWrapper}>
+                  <View style={MapStyle.searchInputContainer}>
+                    <Ionicons name="search" size={20} color="#7f8c8d" style={MapStyle.searchIcon} />
+                    <TextInput
+                      style={MapStyle.searchInput}
+                      placeholder="Rechercher une armoire ou une installation..."
+                      placeholderTextColor="#7f8c8d"
+                      value={searchQuery}
+                      onChangeText={setSearchQuery}
+                      clearButtonMode="while-editing"
+                      onFocus={handleSearchFocus} // Ouvrir le BottomSheet au niveau maximal lors du focus
+                      onBlur={handleSearchBlur} // Réduire le BottomSheet si la recherche est vide
+                    />
+                  </View>
+                  {/* Ajout de l'image du logo à droite avec un contour noir */}
+                  <View style={MapStyle.logoContainer}>
+                    <Image source={LogoImage} style={MapStyle.logoImage} />
+                  </View>
+                </View>
+                {/* Affichage des résultats de recherche */}
+                {searchQuery.trim() !== '' && (
+                  filteredPhotos.length > 0 ? (
+                    <FlatList
+                      data={filteredPhotos}
+                      keyExtractor={(item) => item.id}
+                      renderItem={({ item }) => (
+                        <TouchableOpacity style={MapStyle.searchResultItem} onPress={() => handlePressDetails(item)}>
+                          <PublicImage 
+                            storagePath={item.imageUri}
+                            style={MapStyle.searchResultImage}
+                          />
+                          <View style={MapStyle.searchResultTextContainer}>
+                            <Text style={MapStyle.searchResultTitle}>{item.installationName || 'Nom non spécifié'}</Text>
+                            <Text style={MapStyle.searchResultSubtitle}>
+                              {item.numeroRue || 'Adresse non spécifiée'} {item.rue || 'Adresse non spécifiée'}, {item.ville || 'Adresse non spécifiée'}
+                            </Text>
+                          </View>
+                        </TouchableOpacity>
+                      )}
+                    />
+                  ) : (
+                    <Text style={MapStyle.noResultsText}>Aucun résultat trouvé.</Text>
+                  )
+                )}
+              </View>
+            )}
+          </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
       </BottomSheet>
 
       {/* Bouton flottant pour centrer la carte sur l'utilisateur */}
       <Animated.View
         style={[
-          styles.floatingButton,
+          MapStyle.floatingButton,
           {
             opacity: fadeFloatingButtonAnim,
           },
         ]}
       >
         <TouchableOpacity onPress={goToUserLocation}>
-          <Ionicons name="navigate" size={30} color="#1b484e" />
+          <Ionicons name="navigate" size={26} color="#3498db" style={{ marginLeft: -4 }}/>
         </TouchableOpacity>
       </Animated.View>
 
       {/* Bouton pour afficher/masquer le filtre */}
       <Animated.View
         style={[
-          styles.filterToggleButton,
+          MapStyle.filterToggleButton,
           {
             opacity: fadeAnim,
             transform: [{ translateY: translateYAnim }],
@@ -604,11 +846,11 @@ export default function MapScreen() {
         animationType="slide"
         transparent={true}
         visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
+        onRequestClose={toggleFilterModal}
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContentFiltre}>
-            <Text style={styles.modalTitleFiltre}>Filtrer par armoire</Text>
+        <View style={MapStyle.modalContainer}>
+          <View style={MapStyle.modalContentFiltre}>
+            <Text style={MapStyle.modalTitleFiltre}>Filtrer par armoire</Text>
             <Picker
               selectedValue={selectedArmoire}
               onValueChange={(itemValue) => setSelectedArmoire(itemValue)}
@@ -620,10 +862,10 @@ export default function MapScreen() {
                 ))}
             </Picker>
             <TouchableOpacity
-              style={styles.applyButton}
-              onPress={toggleFilterModal}
+              style={MapStyle.applyButton}
+              onPress={applyFilter}
             >
-              <Text style={styles.applyButtonText}>Appliquer</Text>
+              <Text style={MapStyle.applyButtonText}>Appliquer</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -632,7 +874,7 @@ export default function MapScreen() {
       {/* Bouton pour changer le type de carte */}
       <Animated.View
         style={[
-          styles.mapToggleButton,
+          MapStyle.mapToggleButton,
           {
             opacity: fadeAnim,
             transform: [{ translateY: translateYAnim }],
@@ -646,249 +888,3 @@ export default function MapScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  // ... vos styles existants
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  modalContentFiltre: {
-    width: '80%',
-    backgroundColor: '#fff',
-    borderRadius: 15,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  modalTitleFiltre: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 15,
-    textAlign: 'center',
-    color: '#34495e',
-  },
-  applyButton: {
-    marginTop: 20,
-    backgroundColor: '#3498db',
-    padding: 10,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  applyButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  map: {
-    flex: 1,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  markerImage: {
-    borderRadius: 25,
-    borderWidth: 2,
-    borderColor: '#fff',
-  },
-  modalContent: {
-    padding: 20,
-    flexGrow: 1,
-    backgroundColor: '#ffffff',
-    borderRadius: 20,
-    margin: 0,
-    zIndex: 1,
-  },
-  modalImage: {
-    width: '100%',
-    height: 250,
-    borderRadius: 15,
-    marginBottom: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-  },
-  modalTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#34495e',
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  modalFullContent: {
-    marginTop: 15,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 15,
-    padding: 10,
-    borderRadius: 10,
-    backgroundColor: '#f7f9fa',
-  },
-  icon: {
-    marginRight: 10,
-  },
-  modalLabel: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#34495e',
-  },
-  modalMetadata: {
-    fontSize: 16,
-    color: '#7f8c8d',
-    flex: 1,
-  },
-  noPhotoText: {
-    textAlign: 'center',
-    marginVertical: 20,
-    fontSize: 16,
-    color: '#7f8c8d',
-  },
-  floatingButton: {
-    position: 'absolute',
-    bottom: 110,
-    right: 20,
-    backgroundColor: '#fff',
-    borderRadius: 50,
-    width: 60,
-    height: 60,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.8,
-    shadowRadius: 2,
-    elevation: 5,
-    zIndex: 10,
-  },
-  mapToggleButton: {
-    position: 'absolute',
-    top: 102,
-    right: 7,
-    backgroundColor: '#66b08d',
-    borderRadius: 10,
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.8,
-    shadowRadius: 2,
-    elevation: 5,
-  },
-  filterToggleButton: {
-    position: 'absolute',
-    top: 150,
-    right: 7,
-    backgroundColor: '#66b08d',
-    borderRadius: 10,
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.8,
-    shadowRadius: 2,
-    elevation: 5,
-  },
-  menuButton: {
-    position: 'absolute',
-    top: 55,
-    left: 7,
-    zIndex: 100,
-    backgroundColor: '#66b08d',
-    borderRadius: 10,
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.8,
-    shadowRadius: 2,
-    elevation: 5,
-  },
-  detailsButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1b484e',
-    padding: 10,
-    borderRadius: 8,
-    marginTop: 20,
-    alignSelf: 'center',
-  },
-  detailsIcon: {
-    marginRight: 8,
-  },
-  detailsButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  bottomSheet: {
-    zIndex: 1000,
-    elevation: 20,
-  },
-  calloutContainer: {
-    width: 250,
-    padding: 10,
-    backgroundColor: '#fff',
-    borderRadius: 15,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-  },
-  calloutImage: {
-    width: 200,
-    height: 200,
-    borderRadius: 10,
-    marginBottom: 8,
-  },
-  calloutTitle: {
-    fontWeight: 'bold',
-    fontSize: 16,
-    color: '#34495e',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  calloutButtonsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-    marginTop: 8,
-  },
-  calloutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#3498db',
-    paddingVertical: 6,
-    paddingHorizontal: 8,
-    borderRadius: 8,
-    flex: 1,
-    marginHorizontal: 4,
-    justifyContent: 'center',
-  },
-  calloutButtonText: {
-    color: '#fff',
-    marginLeft: 5,
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-});

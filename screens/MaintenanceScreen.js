@@ -4,7 +4,6 @@ import {
   Text,
   FlatList,
   Image,
-  StyleSheet,
   TouchableOpacity,
   Alert,
   RefreshControl,
@@ -17,6 +16,7 @@ import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { MaterialIcons } from '@expo/vector-icons';
 import PublicImage from '../components/PublicImage';
+import MaintenanceStyle from '../Styles/MaintenanceStyle';
 
 export default function MaintenanceScreen() {
   const navigation = useNavigation();
@@ -146,15 +146,15 @@ export default function MaintenanceScreen() {
   const renderPhotoItem = ({ item }) => (
     <TouchableOpacity onPress={() => openPhotoDetails(item)}>
       
-      <View style={styles.card}>
+      <View style={MaintenanceStyle.card}>
         <PublicImage 
             storagePath={item.imageUri}  // URL ou chemin Firebase
-            style={styles.photo}  // Style de l'image
+            style={MaintenanceStyle.photo}  // Style de l'image
           />
-        <View style={styles.textContainer}>
-          <Text style={styles.title}>{item.installationName || 'Nom indisponible'}</Text>
-          <Text style={styles.status}>{item.functionalityStatus || 'Statut non spécifié'}</Text>
-          <Text style={styles.date}>{formatDate(item.createdAt)}</Text>
+        <View style={MaintenanceStyle.textContainer}>
+          <Text style={MaintenanceStyle.title}>{item.installationName || 'Nom indisponible'}</Text>
+          <Text style={MaintenanceStyle.status}>{item.functionalityStatus || 'Statut non spécifié'}</Text>
+          <Text style={MaintenanceStyle.date}>{formatDate(item.createdAt)}</Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -162,7 +162,7 @@ export default function MaintenanceScreen() {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
+      <View style={MaintenanceStyle.loadingContainer}>
         <Text>Chargement des décorations en panne...</Text>
       </View>
     );
@@ -174,16 +174,16 @@ export default function MaintenanceScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>
+    <View style={MaintenanceStyle.container}>
+      <View style={MaintenanceStyle.header}>
+        <Text style={MaintenanceStyle.headerTitle}>
           {filter === 'tout'
             ? 'Toutes les décorations en panne'
             : filter === 'installée'
             ? 'Décorations en panne installées'
             : 'Décorations en panne non installées'}
         </Text>
-        <TouchableOpacity onPress={openModal} style={styles.filterIcon}>
+        <TouchableOpacity onPress={openModal} style={MaintenanceStyle.filterIcon}>
           <MaterialIcons name="filter-list" size={28} color="#fff" />
         </TouchableOpacity>
       </View>
@@ -192,104 +192,104 @@ export default function MaintenanceScreen() {
         data={photos}
         renderItem={renderPhotoItem}
         keyExtractor={(item) => item.id}
-        ListEmptyComponent={<Text style={styles.noPhotosText}>Aucune décoration disponible.</Text>}
+        ListEmptyComponent={<Text style={MaintenanceStyle.noPhotosText}>Aucune décoration disponible.</Text>}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       />
 
       {/* Modal pour filtre et tri */}
       {isFilterModalVisible && (
         <Modal transparent={true} visible={isFilterModalVisible} animationType="none">
-          <Animated.View style={[styles.modalOverlay, { opacity: fadeAnim }]}>
+          <Animated.View style={[MaintenanceStyle.modalOverlay, { opacity: fadeAnim }]}>
             <Animated.View
               style={[
-                styles.modalContainer,
+                MaintenanceStyle.modalContainer,
                 { transform: [{ translateY: translateYAnim }] },
               ]}
             >
-              <Text style={styles.modalTitle}>Filtrer les décorations</Text>
+              <Text style={MaintenanceStyle.modalTitle}>Filtrer les décorations</Text>
 
               {/* Options de filtre */}
               <TouchableOpacity
-                style={styles.modalOption}
+                style={MaintenanceStyle.modalOption}
                 onPress={() => {
                   setFilter('installée');
                   closeModal();
                 }}
               >
-                <Text style={styles.modalText}>Installées</Text>
+                <Text style={MaintenanceStyle.modalText}>Installées</Text>
                 {filter === 'installée' && (
                   <MaterialIcons name="check" size={24} color="#3498db" />
                 )}
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.modalOption}
+                style={MaintenanceStyle.modalOption}
                 onPress={() => {
                   setFilter('non installée');
                   closeModal();
                 }}
               >
-                <Text style={styles.modalText}>Non installées</Text>
+                <Text style={MaintenanceStyle.modalText}>Non installées</Text>
                 {filter === 'non installée' && (
                   <MaterialIcons name="check" size={24} color="#3498db" />
                 )}
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.modalOption}
+                style={MaintenanceStyle.modalOption}
                 onPress={() => {
                   setFilter('tout');
                   closeModal();
                 }}
               >
-                <Text style={styles.modalText}>Toutes les décorations</Text>
+                <Text style={MaintenanceStyle.modalText}>Toutes les décorations</Text>
                 {filter === 'tout' && (
                   <MaterialIcons name="check" size={24} color="#3498db" />
                 )}
               </TouchableOpacity>
 
               {/* Séparateur */}
-              <View style={styles.modalSeparator} />
+              <View style={MaintenanceStyle.modalSeparator} />
 
               {/* Options de tri */}
-              <Text style={styles.modalTitle}>Trier les décorations</Text>
+              <Text style={MaintenanceStyle.modalTitle}>Trier les décorations</Text>
               <TouchableOpacity
-                style={styles.modalOption}
+                style={MaintenanceStyle.modalOption}
                 onPress={() => {
                   setSortOrder('name');
                   closeModal();
                 }}
               >
-                <Text style={styles.modalText}>Par nom</Text>
+                <Text style={MaintenanceStyle.modalText}>Par nom</Text>
                 {sortOrder === 'name' && (
                   <MaterialIcons name="check" size={24} color="#3498db" />
                 )}
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.modalOption}
+                style={MaintenanceStyle.modalOption}
                 onPress={() => {
                   setSortOrder('date_asc');
                   closeModal();
                 }}
               >
-                <Text style={styles.modalText}>Par date croissante</Text>
+                <Text style={MaintenanceStyle.modalText}>Par date croissante</Text>
                 {sortOrder === 'date_asc' && (
                   <MaterialIcons name="check" size={24} color="#3498db" />
                 )}
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.modalOption}
+                style={MaintenanceStyle.modalOption}
                 onPress={() => {
                   setSortOrder('date_desc');
                   closeModal();
                 }}
               >
-                <Text style={styles.modalText}>Par date décroissante</Text>
+                <Text style={MaintenanceStyle.modalText}>Par date décroissante</Text>
                 {sortOrder === 'date_desc' && (
                   <MaterialIcons name="check" size={24} color="#3498db" />
                 )}
               </TouchableOpacity>
 
-              <TouchableOpacity onPress={closeModal} style={styles.modalCloseButton}>
-                <Text style={styles.modalCloseText}>Fermer</Text>
+              <TouchableOpacity onPress={closeModal} style={MaintenanceStyle.modalCloseButton}>
+                <Text style={MaintenanceStyle.modalCloseText}>Fermer</Text>
               </TouchableOpacity>
             </Animated.View>
           </Animated.View>
@@ -298,123 +298,3 @@ export default function MaintenanceScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  // ... (les styles ont été mis à jour pour un design plus moderne)
-  container: {
-    flex: 1,
-    backgroundColor: '#f7f8fa',
-    padding: 10,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#34495e',
-    flexShrink: 1,
-  },
-  filterIcon: {
-    backgroundColor: '#3498db',
-    padding: 10,
-    borderRadius: 50,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 15,
-    marginBottom: 15,
-    padding: 15,
-    flexDirection: 'row',
-    alignItems: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-  },
-  photo: {
-    width: 70,
-    height: 70,
-    borderRadius: 15,
-    marginRight: 15,
-    backgroundColor: '#ecf0f1',
-  },
-  textContainer: {
-    flex: 1,
-  },
-  title: {
-    fontSize: 17,
-    fontWeight: 'bold',
-    color: '#34495e',
-  },
-  status: {
-    fontSize: 14,
-    color: 'red',
-    marginTop: 2,
-  },
-  date: {
-    fontSize: 12,
-    color: '#888',
-    marginTop: 5,
-  },
-  noPhotosText: {
-    textAlign: 'center',
-    marginTop: 20,
-    fontSize: 16,
-    color: '#95a5a6',
-  },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  modalContainer: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-    paddingBottom: 30,
-    elevation: 10,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginVertical: 10,
-    color: '#1b484e',
-  },
-  modalOption: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 15,
-    alignItems: 'center',
-  },
-  modalText: {
-    fontSize: 16,
-    color: '#34495e',
-  },
-  modalCloseButton: {
-    marginTop: 20,
-    paddingVertical: 15,
-    backgroundColor: '#e74c3c',
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  modalCloseText: {
-    fontSize: 16,
-    color: '#fff',
-  },
-  modalSeparator: {
-    width: '100%',
-    height: 1,
-    backgroundColor: '#ecf0f1',
-    marginVertical: 15,
-  },
-});

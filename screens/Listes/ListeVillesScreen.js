@@ -64,7 +64,7 @@ export default function ListeVillesScreen() {
       {/* Ajouter le header personnalisé avec la flèche de retour et le titre */}
       <View style={styles.headerContainer}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Icon name="arrow-back" size={24} color="#000" />
+          <Icon name="arrow-back" size={24} color="#3498db" />
         </TouchableOpacity>
         <Text style={styles.title}>Sélectionnez une ville</Text>
       </View>

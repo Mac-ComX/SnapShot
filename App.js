@@ -69,7 +69,7 @@ function CustomDrawerContent(props) {
             </SvgText>
           </Svg>
           <Text style={styles.footerText}>
-            Version 1.5.1 Public by @Kmel
+            Version 1.5.2 Public by @Kmel
           </Text>
         </View>
       </DrawerContentScrollView>

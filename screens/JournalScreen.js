@@ -3,7 +3,6 @@ import {
   View,
   Text,
   FlatList,
-  StyleSheet,
   Image,
   RefreshControl,
   TouchableOpacity,
@@ -23,6 +22,7 @@ import { db } from '../services/firebase';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Swipeable } from 'react-native-gesture-handler';
 import PublicImage from '../components/PublicImage';
+import JournalStyle from '../Styles/JournalStyle';
 
 export default function JournalScreen() {
   const [journalEntries, setJournalEntries] = useState([]);
@@ -192,7 +192,7 @@ export default function JournalScreen() {
 
     return (
       <TouchableOpacity onPress={() => handleDelete(id)} activeOpacity={0.6}>
-        <Animated.View style={[styles.deleteButton, { opacity }]}>
+        <Animated.View style={[JournalStyle.deleteButton, { opacity }]}>
           <MaterialIcons name="delete" size={24} color="#fff" />
         </Animated.View>
       </TouchableOpacity>
@@ -210,26 +210,26 @@ export default function JournalScreen() {
         overshootRight={false}
         friction={2}
       >
-        <TouchableOpacity style={styles.journalItem} activeOpacity={0.8}>
+        <TouchableOpacity style={JournalStyle.journalItem} activeOpacity={0.8}>
           {/* Header avec Nom et Date */}
-          <View style={styles.header}>
-            <Text style={styles.title} numberOfLines={1}>
+          <View style={JournalStyle.header}>
+            <Text style={JournalStyle.title} numberOfLines={1}>
               {item.installationName || 'Nom indisponible'}
             </Text>
-            <Text style={styles.date}>{formatDate(item.modificationDate)}</Text>
+            <Text style={JournalStyle.date}>{formatDate(item.modificationDate)}</Text>
           </View>
 
           {/* Statuts */}
-          <View style={styles.statusContainer}>
-            <View style={styles.statusWrapper}>
-              <Text style={styles.statusLabel}>Statut: </Text>
-              <Text style={[styles.statusValue, { color: statusColor }]}>
+          <View style={JournalStyle.statusContainer}>
+            <View style={JournalStyle.statusWrapper}>
+              <Text style={JournalStyle.statusLabel}>Statut: </Text>
+              <Text style={[JournalStyle.statusValue, { color: statusColor }]}>
                 {item.status || 'Non spécifié'}
               </Text>
             </View>
-            <View style={styles.statusWrapper}>
-              <Text style={styles.statusLabel}>État: </Text>
-              <Text style={[styles.statusValue, { color: etatColor }]}>
+            <View style={JournalStyle.statusWrapper}>
+              <Text style={JournalStyle.statusLabel}>État: </Text>
+              <Text style={[JournalStyle.statusValue, { color: etatColor }]}>
                 {item.etat || 'Non spécifié'}
               </Text>
             </View>
@@ -237,9 +237,9 @@ export default function JournalScreen() {
 
           {/* Adresse */}
           {item.address && (
-            <View style={styles.addressContainer}>
-              <Text style={styles.addressTitle}>Adresse:</Text>
-              <Text style={styles.addressText}>{item.address}</Text>
+            <View style={JournalStyle.addressContainer}>
+              <Text style={JournalStyle.addressTitle}>Adresse:</Text>
+              <Text style={JournalStyle.addressText}>{item.address}</Text>
             </View>
           )}
           
@@ -251,28 +251,28 @@ export default function JournalScreen() {
                 <TouchableOpacity onPress={() => openImageModal(photo, item.comment)}>
                   <PublicImage 
                 storagePath={photo}  // URL ou chemin Firebase
-                style={styles.photo}  // Style de l'image
+                style={JournalStyle.photo}  // Style de l'image
               />
                 </TouchableOpacity>
               )}
               keyExtractor={(photo, index) => index.toString()}
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.photoSlider}
+              contentContainerStyle={JournalStyle.photoSlider}
             />
           )}
 
           {/* Dernier Commentaire */}
-          <Text style={styles.commentTitle}>Dernier Commentaire:</Text>
-          <Text style={styles.comment}>{item.comment || 'Aucun commentaire.'}</Text>
+          <Text style={JournalStyle.commentTitle}>Dernier Commentaire:</Text>
+          <Text style={JournalStyle.comment}>{item.comment || 'Aucun commentaire.'}</Text>
 
           {/* Historique des Commentaires */}
           {item.commentHistory && item.commentHistory.length > 0 && (
-            <View style={styles.historyContainer}>
-              <Text style={styles.historyTitle}>Historique des Commentaires :</Text>
+            <View style={JournalStyle.historyContainer}>
+              <Text style={JournalStyle.historyTitle}>Historique des Commentaires :</Text>
               {item.commentHistory.map((historyItem, index) => (
-                <View key={index} style={styles.historyItem}>
-                  <Text style={styles.historyText}>
+                <View key={index} style={JournalStyle.historyItem}>
+                  <Text style={JournalStyle.historyText}>
                     - <Text style={{ fontWeight: 'bold' }}>{historyItem.comment}</Text>{' '}
                     (modifié le{' '}
                     <Text style={{ fontWeight: '400' }}>
@@ -292,32 +292,32 @@ export default function JournalScreen() {
   // Affichage de chargement ou d'erreur
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Chargement du Journal des suivis...</Text>
+      <View style={JournalStyle.loadingContainer}>
+        <Text style={JournalStyle.loadingText}>Chargement du Journal des suivis...</Text>
       </View>
     );
   }
 
   if (error) {
     return (
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>{error}</Text>
+      <View style={JournalStyle.errorContainer}>
+        <Text style={JournalStyle.errorText}>{error}</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={JournalStyle.container}>
       {/* Header avec Titre et Icône de Filtre */}
-      <View style={styles.headerContainer}>
-        <Text style={styles.headerTitle}>
+      <View style={JournalStyle.headerContainer}>
+        <Text style={JournalStyle.headerTitle}>
           {filter === 'tout'
             ? 'Toutes les entrées'
             : filter === 'en_panne'
             ? 'Entrées en Panne'
             : 'Entrées Fonctionnelles'}
         </Text>
-        <TouchableOpacity onPress={openModal} style={styles.filterIcon}>
+        <TouchableOpacity onPress={openModal} style={JournalStyle.filterIcon}>
           <MaterialIcons name="filter-alt" size={28} color="#fff" />
         </TouchableOpacity>
       </View>
@@ -327,105 +327,105 @@ export default function JournalScreen() {
         data={journalEntries}
         renderItem={renderJournalItem}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContainer}
+        contentContainerStyle={JournalStyle.listContainer}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       />
 
       {/* Modal pour Filtre et Tri */}
       {isFilterModalVisible && (
         <Modal transparent={true} visible={isFilterModalVisible} animationType="none">
-          <Animated.View style={[styles.modalOverlay, { opacity: fadeAnim }]}>
+          <Animated.View style={[JournalStyle.modalOverlay, { opacity: fadeAnim }]}>
             <Animated.View
               style={[
-                styles.modalContainer,
+                JournalStyle.modalContainer,
                 { transform: [{ translateY: translateYAnim }] },
               ]}
             >
-              <Text style={styles.modalTitle}>Filtrer les entrées</Text>
+              <Text style={JournalStyle.modalTitle}>Filtrer les entrées</Text>
 
               {/* Options de Filtrage */}
               <TouchableOpacity
-                style={styles.modalOption}
+                style={JournalStyle.modalOption}
                 onPress={() => {
                   setFilter('en_panne');
                   closeModal();
                 }}
               >
-                <Text style={styles.modalText}>En Panne</Text>
+                <Text style={JournalStyle.modalText}>En Panne</Text>
                 {filter === 'en_panne' && (
                   <MaterialIcons name="check" size={24} color="#3498db" />
                 )}
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.modalOption}
+                style={JournalStyle.modalOption}
                 onPress={() => {
                   setFilter('fonctionnelle');
                   closeModal();
                 }}
               >
-                <Text style={styles.modalText}>Fonctionnelle</Text>
+                <Text style={JournalStyle.modalText}>Fonctionnelle</Text>
                 {filter === 'fonctionnelle' && (
                   <MaterialIcons name="check" size={24} color="#3498db" />
                 )}
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.modalOption}
+                style={JournalStyle.modalOption}
                 onPress={() => {
                   setFilter('tout');
                   closeModal();
                 }}
               >
-                <Text style={styles.modalText}>Toutes les entrées</Text>
+                <Text style={JournalStyle.modalText}>Toutes les entrées</Text>
                 {filter === 'tout' && (
                   <MaterialIcons name="check" size={24} color="#3498db" />
                 )}
               </TouchableOpacity>
 
               {/* Séparateur */}
-              <View style={styles.modalSeparator} />
+              <View style={JournalStyle.modalSeparator} />
 
               {/* Options de Tri */}
-              <Text style={styles.modalTitle}>Trier les entrées</Text>
+              <Text style={JournalStyle.modalTitle}>Trier les entrées</Text>
               <TouchableOpacity
-                style={styles.modalOption}
+                style={JournalStyle.modalOption}
                 onPress={() => {
                   setSortOrder('name');
                   closeModal();
                 }}
               >
-                <Text style={styles.modalText}>Par nom</Text>
+                <Text style={JournalStyle.modalText}>Par nom</Text>
                 {sortOrder === 'name' && (
                   <MaterialIcons name="check" size={24} color="#3498db" />
                 )}
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.modalOption}
+                style={JournalStyle.modalOption}
                 onPress={() => {
                   setSortOrder('date_asc');
                   closeModal();
                 }}
               >
-                <Text style={styles.modalText}>Par date croissante</Text>
+                <Text style={JournalStyle.modalText}>Par date croissante</Text>
                 {sortOrder === 'date_asc' && (
                   <MaterialIcons name="check" size={24} color="#3498db" />
                 )}
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.modalOption}
+                style={JournalStyle.modalOption}
                 onPress={() => {
                   setSortOrder('date_desc');
                   closeModal();
                 }}
               >
-                <Text style={styles.modalText}>Par date décroissante</Text>
+                <Text style={JournalStyle.modalText}>Par date décroissante</Text>
                 {sortOrder === 'date_desc' && (
                   <MaterialIcons name="check" size={24} color="#3498db" />
                 )}
               </TouchableOpacity>
 
               {/* Bouton Fermer */}
-              <TouchableOpacity onPress={closeModal} style={styles.modalCloseButton}>
-                <Text style={styles.modalCloseText}>Fermer</Text>
+              <TouchableOpacity onPress={closeModal} style={JournalStyle.modalCloseButton}>
+                <Text style={JournalStyle.modalCloseText}>Fermer</Text>
               </TouchableOpacity>
             </Animated.View>
           </Animated.View>
@@ -435,14 +435,14 @@ export default function JournalScreen() {
       {/* Modal pour Afficher l'Image en Plein Écran */}
       {isImageModalVisible && selectedImage && (
         <Modal transparent={true} visible={isImageModalVisible} animationType="fade">
-          <View style={styles.imageModalOverlay}>
-            <TouchableOpacity style={styles.imageModalClose} onPress={closeImageModal}>
+          <View style={JournalStyle.imageModalOverlay}>
+            <TouchableOpacity style={JournalStyle.imageModalClose} onPress={closeImageModal}>
               <MaterialIcons name="close" size={30} color="#fff" />
             </TouchableOpacity>
-            <View style={styles.imageModalContent}>
-              <Image source={{ uri: selectedImage }} style={styles.fullscreenImage} />
+            <View style={JournalStyle.imageModalContent}>
+              <Image source={{ uri: selectedImage }} style={JournalStyle.fullscreenImage} />
               {selectedComment ? (
-                <Text style={styles.fullscreenComment}>{selectedComment}</Text>
+                <Text style={JournalStyle.fullscreenComment}>{selectedComment}</Text>
               ) : null}
             </View>
           </View>
@@ -451,242 +451,3 @@ export default function JournalScreen() {
     </View>
   );
 }
-
-// Styles pour l'interface
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f2f4f6',
-    padding: 10,
-  },
-  headerContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#2c3e50',
-    flexShrink: 1,
-  },
-  filterIcon: {
-    backgroundColor: '#3498db',
-    padding: 10,
-    borderRadius: 50,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    fontSize: 16,
-    color: '#555555',
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  errorText: {
-    fontSize: 16,
-    color: '#e74c3c',
-    textAlign: 'center',
-  },
-  listContainer: {
-    paddingVertical: 10,
-  },
-  journalItem: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    marginHorizontal: 10,
-    marginBottom: 15,
-    padding: 15,
-    // Ombres
-    shadowColor: '#000000',
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1a1a1a',
-    maxWidth: '70%', // Limite la largeur du titre pour éviter le débordement
-  },
-  date: {
-    fontSize: 12,
-    color: '#a0a0a0',
-  },
-  statusContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-  },
-  statusWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  statusLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#000', // Label en noir
-  },
-  statusValue: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  addressContainer: {
-    marginBottom: 10,
-  },
-  addressTitle: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#333333',
-  },
-  addressText: {
-    fontSize: 14,
-    color: '#555555',
-  },
-  commentTitle: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#333333',
-    marginBottom: 5,
-  },
-  comment: {
-    fontSize: 14,
-    color: '#555555',
-    marginBottom: 10,
-  },
-  historyContainer: {
-    marginBottom: 15,
-  },
-  historyTitle: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#444444',
-    marginBottom: 5,
-  },
-  historyItem: {
-    marginBottom: 5,
-  },
-  historyText: {
-    fontSize: 13,
-    color: '#666666',
-  },
-  photoSlider: {
-    paddingVertical: 10,
-  },
-  photo: {
-    width: 100,
-    height: 100,
-    marginRight: 10,
-    borderRadius: 8,
-    borderWidth: 0.5,
-    borderColor: '#cccccc',
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 3,
-  },
-  deleteButton: {
-    backgroundColor: '#e74c3c',
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: 60,
-    height: '100%',
-    borderTopRightRadius: 12,
-    borderBottomRightRadius: 12,
-  },
-  deleteButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  modalContainer: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-    paddingBottom: 30,
-    elevation: 10,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginVertical: 10,
-    color: '#1b484e',
-  },
-  modalOption: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 15,
-    alignItems: 'center',
-  },
-  modalText: {
-    fontSize: 16,
-    color: '#34495e',
-  },
-  modalCloseButton: {
-    marginTop: 20,
-    paddingVertical: 15,
-    backgroundColor: '#e74c3c',
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  modalCloseText: {
-    fontSize: 16,
-    color: '#fff',
-  },
-  modalSeparator: {
-    width: '100%',
-    height: 1,
-    backgroundColor: '#ecf0f1',
-    marginVertical: 15,
-  },
-  imageModalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.9)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  imageModalClose: {
-    position: 'absolute',
-    top: 40,
-    right: 20,
-    zIndex: 1,
-  },
-  imageModalContent: {
-    width: '90%',
-    height: '80%',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  fullscreenImage: {
-    width: '100%',
-    height: '70%',
-    resizeMode: 'contain',
-    borderRadius: 12,
-  },
-  fullscreenComment: {
-    marginTop: 20,
-    fontSize: 16,
-    color: '#fff',
-    textAlign: 'center',
-  },
-});

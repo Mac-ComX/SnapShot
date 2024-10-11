@@ -3,7 +3,6 @@ import {
   View,
   Text,
   ScrollView,
-  StyleSheet,
   Dimensions,
   ActivityIndicator,
   Alert,
@@ -17,6 +16,7 @@ import Svg, { G, Circle } from 'react-native-svg';
 import { LineChart, BarChart } from 'react-native-chart-kit';
 import { useNavigation } from '@react-navigation/native';
 import PublicImage from '../components/PublicImage';
+import DashboardStyle from '../Styles/DashboardStyle';
 
 const screenWidth = Dimensions.get('window').width;
 const radius = 90;
@@ -248,9 +248,9 @@ export default function DashboardScreen() {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
+      <View style={DashboardStyle.loadingContainer}>
         <ActivityIndicator size="large" color="#66b08d" />
-        <Text style={styles.loadingText}>Chargement des données...</Text>
+        <Text style={DashboardStyle.loadingText}>Chargement des données...</Text>
       </View>
     );
   }
@@ -294,70 +294,70 @@ export default function DashboardScreen() {
 
   return (
     <ScrollView
-      style={styles.container}
+      style={DashboardStyle.container}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#1b484e" />
       }
     >
-      <Text style={styles.subTitle}>Indicateurs</Text>
+      <Text style={DashboardStyle.subTitle}>Indicateurs</Text>
       {/* Indicateurs */}
       <ScrollView
         horizontal={true}
         showsHorizontalScrollIndicator={false}
-        style={styles.horizontalScroll}
+        style={DashboardStyle.horizontalScroll}
       >
-        <View style={styles.grid}>
-          <View style={[styles.cardSmall, { backgroundColor: '#4BC0C0' }]}>
-            <Text style={styles.kpiTitle}>Total des Décorations</Text>
-            <Text style={styles.kpiValue}>{stats.totalPhotos}</Text>
+        <View style={DashboardStyle.grid}>
+          <View style={[DashboardStyle.cardSmall, { backgroundColor: '#4BC0C0' }]}>
+            <Text style={DashboardStyle.kpiTitle}>Total des Décorations</Text>
+            <Text style={DashboardStyle.kpiValue}>{stats.totalPhotos}</Text>
           </View>
 
-          <View style={[styles.cardSmall, { backgroundColor: '#FF6384' }]}>
-            <Text style={styles.kpiTitle}>Jours Travaillés</Text>
-            <Text style={styles.kpiValue}>{numberOfWorkDays}</Text>
+          <View style={[DashboardStyle.cardSmall, { backgroundColor: '#FF6384' }]}>
+            <Text style={DashboardStyle.kpiTitle}>Jours Travaillés</Text>
+            <Text style={DashboardStyle.kpiValue}>{numberOfWorkDays}</Text>
           </View>
 
-          <View style={[styles.cardSmall, { backgroundColor: '#36A2EB' }]}>
-            <Text style={styles.kpiTitle}>Installations Fonctionnelles</Text>
-            <Text style={styles.kpiValue}>
+          <View style={[DashboardStyle.cardSmall, { backgroundColor: '#36A2EB' }]}>
+            <Text style={DashboardStyle.kpiTitle}>Installations Fonctionnelles</Text>
+            <Text style={DashboardStyle.kpiValue}>
               {stats.installationsByStatus['Fonctionnelle'] || 0}
             </Text>
           </View>
 
-          <View style={[styles.cardSmall, { backgroundColor: '#FFCE56' }]}>
-            <Text style={styles.kpiTitle}>Installations en Panne</Text>
-            <Text style={styles.kpiValue}>{stats.installationsByStatus['En panne'] || 0}</Text>
+          <View style={[DashboardStyle.cardSmall, { backgroundColor: '#FFCE56' }]}>
+            <Text style={DashboardStyle.kpiTitle}>Installations en Panne</Text>
+            <Text style={DashboardStyle.kpiValue}>{stats.installationsByStatus['En panne'] || 0}</Text>
           </View>
 
           {/* Indicateur pour les armoires */}
-          <View style={[styles.cardSmall, { backgroundColor: '#9966FF' }]}>
-            <Text style={styles.kpiTitle}>Total des Armoires</Text>
-            <Text style={styles.kpiValue}>{stats.totalArmoires}</Text>
+          <View style={[DashboardStyle.cardSmall, { backgroundColor: '#9966FF' }]}>
+            <Text style={DashboardStyle.kpiTitle}>Total des Armoires</Text>
+            <Text style={DashboardStyle.kpiValue}>{stats.totalArmoires}</Text>
           </View>
         </View>
       </ScrollView>
 
       {/* Décorations en Panne */}
-      <Text style={styles.subTitle}>Décorations en Panne</Text>
+      <Text style={DashboardStyle.subTitle}>Décorations en Panne</Text>
       {stats.decorationsEnPanne.length === 0 ? (
-        <Text style={styles.noDataText}>Aucune décoration en panne.</Text>
+        <Text style={DashboardStyle.noDataText}>Aucune décoration en panne.</Text>
       ) : (
         <FlatList
           data={stats.decorationsEnPanne}
           keyExtractor={(item, index) => index.toString()}
           horizontal
           showsHorizontalScrollIndicator={false}
-          style={styles.horizontalScroll}
+          style={DashboardStyle.horizontalScroll}
           renderItem={({ item }) => (
             <TouchableOpacity
               onPress={() => {
                 navigation.navigate('DetailsDebugScreen', { photo: item });
               }}
             >
-              <View style={styles.panneCard}>
-                <PublicImage storagePath={item.imageUri} style={styles.panneImage} />
-                <Text style={styles.panneName}>{item.name}</Text>
-                <Text style={styles.panneStatus}>{item.status}</Text>
+              <View style={DashboardStyle.panneCard}>
+                <PublicImage storagePath={item.imageUri} style={DashboardStyle.panneImage} />
+                <Text style={DashboardStyle.panneName}>{item.name}</Text>
+                <Text style={DashboardStyle.panneStatus}>{item.status}</Text>
               </View>
             </TouchableOpacity>
           )}
@@ -365,9 +365,9 @@ export default function DashboardScreen() {
       )}
 
       {/* Répartition des Types d'Installations */}
-      <View style={styles.cardLarge}>
-        <Text style={styles.chartTitle}>Répartition des Types d'Installations</Text>
-        <View style={styles.pieChartContainer}>
+      <View style={DashboardStyle.cardLarge}>
+        <Text style={DashboardStyle.chartTitle}>Répartition des Types d'Installations</Text>
+        <View style={DashboardStyle.pieChartContainer}>
           <Svg width={screenWidth - 60} height={220}>
             <G rotation="-90" origin={`${center}, ${center}`}>
               {pieChartData.map((item, index) => {
@@ -394,17 +394,17 @@ export default function DashboardScreen() {
               })}
             </G>
           </Svg>
-          <View style={styles.centerTextContainer}>
-            <Text style={styles.centerText}>{stats.totalPhotos}</Text>
-            <Text style={styles.centerLabel}>Décors</Text>
+          <View style={DashboardStyle.centerTextContainer}>
+            <Text style={DashboardStyle.centerText}>{stats.totalPhotos}</Text>
+            <Text style={DashboardStyle.centerLabel}>Décors</Text>
           </View>
         </View>
 
-        <View style={styles.legendContainer}>
+        <View style={DashboardStyle.legendContainer}>
           {pieChartData.map((item, index) => (
-            <View key={index} style={styles.legendItem}>
-              <View style={[styles.legendColor, { backgroundColor: item.color }]} />
-              <Text style={styles.legendLabel}>
+            <View key={index} style={DashboardStyle.legendItem}>
+              <View style={[DashboardStyle.legendColor, { backgroundColor: item.color }]} />
+              <Text style={DashboardStyle.legendLabel}>
                 {item.name}: {item.percentage}
               </Text>
             </View>
@@ -413,8 +413,8 @@ export default function DashboardScreen() {
       </View>
 
       {/* Graphiques */}
-      <View style={styles.cardLarge}>
-        <Text style={styles.chartTitle}>Décorations Capturées par Jour</Text>
+      <View style={DashboardStyle.cardLarge}>
+        <Text style={DashboardStyle.chartTitle}>Décorations Capturées par Jour</Text>
         <ScrollView horizontal={true}>
           <View>
             <BarChart
@@ -424,7 +424,7 @@ export default function DashboardScreen() {
               chartConfig={chartConfig}
               verticalLabelRotation={45}
               fromZero={true}
-              style={[styles.chartStyle, { marginLeft: -25}]} // Ajustement du marginLeft
+              style={[DashboardStyle.chartStyle, { marginLeft: -25}]} // Ajustement du marginLeft
               showValuesOnTopOfBars={true}
               xLabelsOffset={10} // Ajustement du xLabelsOffset
               yLabelsOffset={20}
@@ -435,8 +435,8 @@ export default function DashboardScreen() {
       </View>
 
       {/* Nouveau graphique des installations par armoire */}
-      <View style={styles.cardLarge}>
-        <Text style={styles.chartTitle}>Installations par Armoire</Text>
+      <View style={DashboardStyle.cardLarge}>
+        <Text style={DashboardStyle.chartTitle}>Installations par Armoire</Text>
         {stats.armoireData && (
           <ScrollView horizontal={true}>
             <BarChart
@@ -446,7 +446,7 @@ export default function DashboardScreen() {
               chartConfig={chartConfig}
               verticalLabelRotation={45}
               fromZero={true}
-              style={[styles.chartStyle, { marginLeft: -25,}]} 
+              style={[DashboardStyle.chartStyle, { marginLeft: -25,}]} 
               showValuesOnTopOfBars={true}
               xLabelsOffset={-10}
               yLabelsOffset={20}
@@ -455,8 +455,8 @@ export default function DashboardScreen() {
         )}
       </View>
 
-      <View style={styles.cardLarge}>
-        <Text style={styles.chartTitle}>Évolution Quotidienne</Text>
+      <View style={DashboardStyle.cardLarge}>
+        <Text style={DashboardStyle.chartTitle}>Évolution Quotidienne</Text>
         <ScrollView horizontal={true}>
           <LineChart
             data={lineChartData}
@@ -464,7 +464,7 @@ export default function DashboardScreen() {
             height={260}
             chartConfig={chartConfig}
             bezier
-            style={[styles.chartStyle, { marginLeft: -40 }]} 
+            style={[DashboardStyle.chartStyle, { marginLeft: -40 }]} 
             verticalLabelRotation={45}
           />
         </ScrollView>
@@ -472,173 +472,6 @@ export default function DashboardScreen() {
     </ScrollView>
   );
 }
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F0F2F5',
-    padding: 20,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F0F2F5',
-  },
-  loadingText: {
-    color: '#555',
-    marginTop: 10,
-    fontSize: 16,
-  },
-  subTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#333',
-    marginBottom: 15,
-    marginTop: 30,
-  },
-  grid: {
-    flexDirection: 'row',
-  },
-  horizontalScroll: {
-    marginBottom: 20,
-  },
-  cardSmall: {
-    borderRadius: 12,
-    padding: 15,
-    width: 150,
-    height: 150,
-    marginRight: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#fff',
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 3,
-  },
-  kpiTitle: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#555',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  kpiValue: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#222',
-    textAlign: 'center',
-  },
-  panneCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 10,
-    marginRight: 15,
-    width: 160,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 3,
-  },
-  panneImage: {
-    width: 140,
-    height: 140,
-    borderRadius: 12,
-    marginBottom: 10,
-  },
-  panneName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-    textAlign: 'center',
-    marginBottom: 5,
-  },
-  panneStatus: {
-    fontSize: 12,
-    color: '#E74C3C',
-    textAlign: 'center',
-  },
-  noDataText: {
-    color: '#777',
-    fontSize: 16,
-    textAlign: 'center',
-    marginTop: 10,
-    marginBottom: 25,
-  },
-  cardLarge: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 3,
-  },
-  chartTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#333',
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  chartStyle: {
-    borderRadius: 16,
-    marginVertical: 8,
-  },
-  pieChartContainer: {
-    left: 50,
-    top: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-    padding: 20,
-  },
-  centerTextContainer: {
-    left: 75,
-    position: 'absolute',
-    top: '46%',
-    alignItems: 'center',
-  },
-  centerText: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#333',
-  },
-  centerLabel: {
-    fontSize: 16,
-    color: '#777',
-  },
-  legendContainer: {
-    marginTop: 20,
-    alignItems: 'center',
-  },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  legendColor: {
-    width: 15,
-    height: 15,
-    marginRight: 10,
-    borderRadius: 4,
-  },
-  legendLabel: {
-    fontSize: 14,
-    color: '#555',
-  },
-  valuesContainer: {
-    position: 'absolute',
-    width: '100%',
-    height: '100%',
-  },
-  barValue: {
-    fontSize: 12,
-    color: '#333',
-  },
-});
 
 const chartConfig = {
   backgroundColor: '#ffffff',

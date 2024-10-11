@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, ScrollView, TextInput, Button, StyleSheet, Alert, TouchableOpacity, Text, Modal, Dimensions, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
+import { View, ScrollView, TextInput, Button, Alert, TouchableOpacity, Text, Modal, Dimensions, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import * as Location from 'expo-location';
@@ -7,6 +7,7 @@ import * as FileSystem from 'expo-file-system';
 import { collection, addDoc, query, where, getDocs } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../services/firebase';
+import FormStyle from '../Styles/FormStyle';
 
 const GOOGLE_API_KEY = 'AIzaSyAdPUePDEdtyX6tEH6c6JkQTrP6fsHPnoE'; // Replace with your Google API key
 
@@ -245,13 +246,13 @@ export default function FormScreen() {
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-      <ScrollView ref={scrollViewRef} contentContainerStyle={[styles.formContainer, { minHeight: height }]}>
-        <Text style={styles.title}>Informations Techniques</Text>
+      <ScrollView ref={scrollViewRef} contentContainerStyle={[FormStyle.formContainer, { minHeight: height }]}>
+        <Text style={FormStyle.title}>Informations Techniques</Text>
 
-        <TextInput style={styles.input} placeholder="Nom de l'installation" value={installationName} editable={false} placeholderTextColor="#888" />
+        <TextInput style={FormStyle.input} placeholder="Nom de l'installation" value={installationName} editable={false} placeholderTextColor="#888" />
 
         <TextInput 
-          style={styles.input} 
+          style={FormStyle.input} 
           placeholder="Adresse complète" 
           value={address} 
           editable={true} 
@@ -259,12 +260,12 @@ export default function FormScreen() {
           placeholderTextColor="#888" 
         />
 
-        <TouchableOpacity style={styles.button} onPress={generateLocationAndName}>
-          <Text style={styles.buttonText}>Générer</Text>
+        <TouchableOpacity style={FormStyle.button} onPress={generateLocationAndName}>
+          <Text style={FormStyle.buttonText}>Générer</Text>
         </TouchableOpacity>
 
-        <Text style={styles.pickerTitle}>Type de décorations</Text>
-        <TouchableOpacity onPress={() => setShowTypePicker(!showTypePicker)} style={styles.pickerButton}>
+        <Text style={FormStyle.pickerTitle}>Type de décorations</Text>
+        <TouchableOpacity onPress={() => setShowTypePicker(!showTypePicker)} style={FormStyle.pickerButton}>
           <Text>{installationType}</Text>
         </TouchableOpacity>
         {showTypePicker && (
@@ -278,8 +279,8 @@ export default function FormScreen() {
           </Picker>
         )}
 
-        <Text style={styles.pickerTitle}>Statut d'installation</Text>
-        <TouchableOpacity onPress={() => setShowStatusPicker(!showStatusPicker)} style={styles.pickerButton}>
+        <Text style={FormStyle.pickerTitle}>Statut d'installation</Text>
+        <TouchableOpacity onPress={() => setShowStatusPicker(!showStatusPicker)} style={FormStyle.pickerButton}>
           <Text>{installationStatus}</Text>
         </TouchableOpacity>
         {showStatusPicker && (
@@ -289,8 +290,8 @@ export default function FormScreen() {
           </Picker>
         )}
 
-        <Text style={styles.pickerTitle}>État de fonctionnement</Text>
-        <TouchableOpacity onPress={() => setShowFunctionalityPicker(!showFunctionalityPicker)} style={styles.pickerButton}>
+        <Text style={FormStyle.pickerTitle}>État de fonctionnement</Text>
+        <TouchableOpacity onPress={() => setShowFunctionalityPicker(!showFunctionalityPicker)} style={FormStyle.pickerButton}>
           <Text>{functionalityStatus}</Text>
         </TouchableOpacity>
         {showFunctionalityPicker && (
@@ -300,22 +301,22 @@ export default function FormScreen() {
           </Picker>
         )}
 
-        <Text style={styles.pickerTitle}>Armoire</Text>
-        <TextInput style={styles.input} placeholder="Numéro de l'armoire" value={armoire} onChangeText={setArmoire} placeholderTextColor="#888" />
+        <Text style={FormStyle.pickerTitle}>Armoire</Text>
+        <TextInput style={FormStyle.input} placeholder="Numéro de l'armoire" value={armoire} onChangeText={setArmoire} placeholderTextColor="#888" />
 
-        <TextInput style={[styles.input, { height: 90 }]} placeholder="Ajouter un commentaire" placeholderTextColor="#888" value={comment} onChangeText={setComment} multiline />
+        <TextInput style={[FormStyle.input, { height: 90 }]} placeholder="Ajouter un commentaire" placeholderTextColor="#888" value={comment} onChangeText={setComment} multiline />
 
-        <TouchableOpacity style={[styles.button, styles.saveButton]} onPress={savePhoto}>
-          <Text style={styles.buttonText}>Enregistrer</Text>
+        <TouchableOpacity style={[FormStyle.button, FormStyle.saveButton]} onPress={savePhoto}>
+          <Text style={FormStyle.buttonText}>Enregistrer</Text>
         </TouchableOpacity>
 
         <Modal transparent={true} visible={showNumeroRueModal} onRequestClose={() => setShowNumeroRueModal(false)}>
-          <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Entrez le numéro de rue</Text>
-              <TextInput style={styles.input} placeholder="Numéro de rue" value={numeroRue} onChangeText={setNumeroRue} keyboardType="numeric" />
-              <TouchableOpacity style={styles.modalButton} onPress={handleNumeroRueUpdate}>
-                <Text style={styles.buttonText}>Valider</Text>
+          <View style={FormStyle.modalContainer}>
+            <View style={FormStyle.modalContent}>
+              <Text style={FormStyle.modalTitle}>Entrez le numéro de rue</Text>
+              <TextInput style={FormStyle.input} placeholder="Numéro de rue" value={numeroRue} onChangeText={setNumeroRue} keyboardType="numeric" />
+              <TouchableOpacity style={FormStyle.modalButton} onPress={handleNumeroRueUpdate}>
+                <Text style={FormStyle.buttonText}>Valider</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -324,104 +325,3 @@ export default function FormScreen() {
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  formContainer: {
-    padding: 20,
-    backgroundColor: '#f7f7f7',
-    borderRadius: 20,
-    width: '95%',
-    alignSelf: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 10,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#1b484e',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  input: {
-    height: 50,
-    borderColor: '#ccc',
-    borderWidth: 1,
-    marginBottom: 15,
-    paddingHorizontal: 15,
-    borderRadius: 10,
-    backgroundColor: '#fff',
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 3,
-  },
-  pickerButton: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 10,
-    backgroundColor: '#f9f9f9',
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 3,
-  },
-  pickerTitle: {
-    marginBottom: 5,
-    fontWeight: 'bold',
-    fontSize: 16,
-    color: '#333',
-  },
-  button: {
-    backgroundColor: '#1b484e',
-    padding: 15,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 10,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  saveButton: {
-    backgroundColor: '#4caf50',
-  },
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    padding: 25,
-    borderRadius: 15,
-    width: '85%',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 15,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 20,
-  },
-  modalButton: {
-    backgroundColor: '#4caf50',
-    padding: 15,
-    borderRadius: 10,
-    marginTop: 15,
-    alignItems: 'center',
-    width: '100%',
-  },
-});
