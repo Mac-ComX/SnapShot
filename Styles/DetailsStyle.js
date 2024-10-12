@@ -1,3 +1,4 @@
+// styles/DetailsStyle.js
 import { StyleSheet } from 'react-native';
 
 const DetailsStyle = StyleSheet.create({
@@ -237,15 +238,16 @@ const DetailsStyle = StyleSheet.create({
     color: '#1b484e',
   },
   modalOption: {
-    padding: 15,
+    paddingVertical: 15,
     width: '100%',
     alignItems: 'center',
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },
   modalText: {
-    fontSize: 16,
+    fontSize: 18,
     color: '#34495e',
+    textAlign: 'center',
   },
   optionActive: {
     backgroundColor: '#e0f7fa',
@@ -303,6 +305,49 @@ const DetailsStyle = StyleSheet.create({
     color: 'red',
     textAlign: 'center',
     marginTop: 10,
+  },
+  optionsIconContainer: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    zIndex: 10,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: 20,
+    padding: 5,
+  },
+  optionsIcon: {
+    color: '#fff',
+    fontSize: 24,
+  },
+  optionsModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  optionsModalContainer: {
+    backgroundColor: '#fff',
+    padding: 20,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+  },
+  optionsModalOption: {
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  optionsModalText: {
+    fontSize: 18,
+    color: '#34495e',
+    textAlign: 'center',
+  },
+  optionsModalCancel: {
+    marginTop: 10,
+    paddingVertical: 15,
+  },
+  optionsModalCancelText: {
+    fontSize: 18,
+    color: '#e74c3c',
+    textAlign: 'center',
   },
 });
 
