@@ -1,4 +1,3 @@
-// styles/DetailsStyle.js
 import { StyleSheet } from 'react-native';
 
 const DetailsStyle = StyleSheet.create({
@@ -238,16 +237,15 @@ const DetailsStyle = StyleSheet.create({
     color: '#1b484e',
   },
   modalOption: {
-    paddingVertical: 15,
+    padding: 15,
     width: '100%',
     alignItems: 'center',
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },
   modalText: {
-    fontSize: 18,
+    fontSize: 16,
     color: '#34495e',
-    textAlign: 'center',
   },
   optionActive: {
     backgroundColor: '#e0f7fa',
@@ -306,49 +304,16 @@ const DetailsStyle = StyleSheet.create({
     textAlign: 'center',
     marginTop: 10,
   },
-  optionsIconContainer: {
+  menuButton: {
     position: 'absolute',
-    top: 20,
-    right: 20,
-    zIndex: 10,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    top: 10,       // Distance du haut de la photo
+    right: 10,     // Distance du côté droit
+    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Fond semi-transparent pour le contraste
     borderRadius: 20,
-    padding: 5,
+    padding: 8,    // Taille de l'icône
+    zIndex: 10,    // Assure que le bouton soit superposé sur la photo
   },
-  optionsIcon: {
-    color: '#fff',
-    fontSize: 24,
-  },
-  optionsModalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-  },
-  optionsModalContainer: {
-    backgroundColor: '#fff',
-    padding: 20,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-  },
-  optionsModalOption: {
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  optionsModalText: {
-    fontSize: 18,
-    color: '#34495e',
-    textAlign: 'center',
-  },
-  optionsModalCancel: {
-    marginTop: 10,
-    paddingVertical: 15,
-  },
-  optionsModalCancelText: {
-    fontSize: 18,
-    color: '#e74c3c',
-    textAlign: 'center',
-  },
+  
 });
 
 export default DetailsStyle;
