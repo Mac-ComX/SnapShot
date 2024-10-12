@@ -20,36 +20,6 @@ const DetailsStyle = StyleSheet.create({
     shadowRadius: 15,
     elevation: 8,
   },
-  menuButton: {
-    position: 'absolute',
-    top: 15,
-    right: 15,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    borderRadius: 20,
-    padding: 5,
-  },
-  dropdownMenu: {
-    position: 'absolute',
-    top: 50,
-    right: 15,
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    zIndex: 1000,
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 10,
-  },
-  menuItemText: {
-    marginLeft: 10,
-    fontSize: 16,
-    color: '#34495e',
-  },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
@@ -102,7 +72,7 @@ const DetailsStyle = StyleSheet.create({
     paddingHorizontal: 10,
     borderRadius: 20,
     alignSelf: 'center',
-    left: -6,
+    left:-6,
     marginTop: 5,
   },
   mapButtonText: {
@@ -155,14 +125,15 @@ const DetailsStyle = StyleSheet.create({
   },
   fullscreenModalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.9)', // Assure un fond sombre
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: 'transparent',
   },
   fullscreenImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'contain', // Pour s'assurer que l'image est entièrement visible
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    resizeMode: 'cover',
   },
   fullscreenModalClose: {
     position: 'absolute',
@@ -266,17 +237,15 @@ const DetailsStyle = StyleSheet.create({
     color: '#1b484e',
   },
   modalOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
     padding: 15,
     width: '100%',
+    alignItems: 'center',
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },
   modalText: {
     fontSize: 16,
     color: '#34495e',
-    marginLeft: 10,
   },
   optionActive: {
     backgroundColor: '#e0f7fa',
@@ -334,29 +303,6 @@ const DetailsStyle = StyleSheet.create({
     color: 'red',
     textAlign: 'center',
     marginTop: 10,
-  },
-
-  // Dans DetailsStyle.js
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginVertical: 10,
-    color: '#2c3e50',
-  },
-  carouselContainer: {
-    marginBottom: 20,
-  },
-  mainCarouselImage: {
-    width: 300, // Largeur plus grande pour l'image principale
-    height: 300, // Hauteur plus grande pour l'image principale
-    borderRadius: 10,
-    marginRight: 10,
-  },
-  carouselImage: {
-    width: 150,
-    height: 150,
-    borderRadius: 10,
-    marginRight: 10,
   },
 });
 
