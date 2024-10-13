@@ -704,7 +704,7 @@ export default function MapScreen() {
           style={{ flex: 1 }}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
         >
-          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss} >
             {selectedPhoto ? (
               // Affichage des détails de l'installation lorsqu'un marqueur est sélectionné
               <BottomSheetScrollView contentContainerStyle={MapStyle.modalContent}>
@@ -816,23 +816,29 @@ export default function MapScreen() {
                 )}
                 {/* Affichage des résultats par défaut si aucun marqueur n'est sélectionné et aucune recherche effectuée */}
                 {/* Titre au-dessus des images */}
-                  <Text style={MapStyle.sectionTitle}>Dernières photos ajoutées</Text>
+                  <Text style={MapStyle.sectionTitre}>Dernières installations décoratives</Text>
+                  
+                  <View style={MapStyle.card}>      
                 {searchQuery.trim() === '' && (
                 <FlatList
                   data={defaultPhotos} // Afficher les 4 dernières photos
                   keyExtractor={(item) => item.id}
                   horizontal={true} // Activer le défilement horizontal
                   showsHorizontalScrollIndicator={false} // Masquer la barre de défilement
-                  renderItem={({ item }) => (
+                  renderItem={({ item }) => (              
                     <TouchableOpacity onPress={() => handlePressDetails(item)}>
+
                       <PublicImage 
                         storagePath={item.imageUri}
                         style={MapStyle.horizontalImage} // Appliquer un style pour la taille des images
                       />
+
                     </TouchableOpacity>
                   )}
                 />
                 )}
+                
+                </View>
                 
               </View>
               

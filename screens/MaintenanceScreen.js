@@ -178,10 +178,10 @@ export default function MaintenanceScreen() {
       <View style={MaintenanceStyle.header}>
         <Text style={MaintenanceStyle.headerTitle}>
           {filter === 'tout'
-            ? 'Toutes les décorations en panne'
+            ? 'Décorations en panne'
             : filter === 'installée'
-            ? 'Décorations en panne installées'
-            : 'Décorations en panne non installées'}
+            ? 'En panne installées'
+            : 'En panne non installées'}
         </Text>
         <TouchableOpacity onPress={openModal} style={MaintenanceStyle.filterIcon}>
           <MaterialIcons name="filter-list" size={28} color="#fff" />

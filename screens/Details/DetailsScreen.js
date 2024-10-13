@@ -175,20 +175,20 @@ export default function DetailsScreen({ route }) {
   /**
    * Redimensionner et compresser une image
    */
-  const resizeImage = async (uri) => {
-    try {
-      const manipResult = await ImageManipulator.manipulateAsync(
-        uri,
-        [{ resize: { width: 800 } }],
-        { compress: 0.9, format: ImageManipulator.SaveFormat.JPEG }
-      );
-      console.log('Image redimensionnée et compressée :', manipResult.uri);
-      return manipResult.uri;
-    } catch (error) {
-      console.error('Erreur lors du redimensionnement de l\'image :', error);
-      throw error;
-    }
-  };
+  // const resizeImage = async (uri) => {
+  //   try {
+  //     const manipResult = await ImageManipulator.manipulateAsync(
+  //       uri,
+  //       [{ resize: { width: 800 } }],
+  //       { compress: 0.9, format: ImageManipulator.SaveFormat.JPEG }
+  //     );
+  //     console.log('Image redimensionnée et compressée :', manipResult.uri);
+  //     return manipResult.uri;
+  //   } catch (error) {
+  //     console.error('Erreur lors du redimensionnement de l\'image :', error);
+  //     throw error;
+  //   }
+  // };
 
   /**
    * Récupérer les photos additionnelles depuis Firestore
@@ -237,7 +237,7 @@ const captureNewPhotoWithCamera = async () => {
     // Si l'utilisateur ne l'a pas annulée
     if (!result.canceled) {
       const { uri } = result.assets[0];
-      const resizedUri = await resizeImage(uri);
+      const resizedUri = uri;
 
       // Uploader la nouvelle image principale dans le tableau imageUris
       await uploadPhotoToImageUris(resizedUri);
@@ -282,7 +282,6 @@ const uploadPhotoToImageUris = async (localUri) => {
           imageUris: arrayUnion(downloadURL), // Ajouter la nouvelle URL dans le tableau imageUris
         });
 
-        console.log('Firestore mis à jour avec la nouvelle URL dans imageUris');
         Alert.alert('Succès', 'Photo principale supplémentaire ajoutée avec succès !');
       }
     );
@@ -291,35 +290,6 @@ const uploadPhotoToImageUris = async (localUri) => {
     Alert.alert('Erreur', `Impossible d'uploader la photo : ${error.message}`);
   }
 };
-
-
-  /**
-   * Capturer une nouvelle photo principal supplémentaire avec la caméra et uploader
-   */
-  // const captureNewPhotoWithCamera = async () => {
-  //   try {
-  //     const permission = await ImagePicker.requestCameraPermissionsAsync();
-  //     if (!permission.granted) {
-  //       Alert.alert('Permission refusée', 'Vous devez autoriser l\'accès à la caméra.');
-  //       return;
-  //     }
-
-  //     const result = await ImagePicker.launchCameraAsync({
-  //       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-  //       allowsEditing: true,
-  //       quality: 1,
-  //     });
-
-  //     if (!result.canceled) {
-  //       const { uri } = result.assets[0];
-  //       const resizedUri = await resizeImage(uri);
-  //       await uploadAdditionalPhotoToFirebase(resizedUri);
-  //     }
-  //   } catch (error) {
-  //     console.error('Erreur lors de la capture de la photo :', error);
-  //     Alert.alert('Erreur', 'Impossible de capturer la photo.');
-  //   }
-  // };
 
   /**
    * Uploader une photo additionnelle sur Firebase
@@ -358,7 +328,6 @@ const uploadPhotoToImageUris = async (localUri) => {
         }, 
         async () => {
           const downloadURL = await getDownloadURL(storageRef);
-          console.log('URL de téléchargement additionnelle obtenue :', downloadURL);
 
           await addDoc(collection(db, 'decorations', photo.installationID, 'photos-additionnelles'), {
             imageUri: downloadURL,
@@ -398,7 +367,7 @@ const uploadPhotoToImageUris = async (localUri) => {
 
       if (!result.canceled) {
         const { uri } = result.assets[0];
-        const resizedUri = await resizeImage(uri);
+        const resizedUri = uri;
 
         // Optionnel : ajouter l'ancienne image principale aux photos additionnelles
         // if (selectedImage !== photo.imageUri) {
@@ -451,13 +420,11 @@ const uploadPhotoToImageUris = async (localUri) => {
         }, 
         async () => {
           const downloadURL = await getDownloadURL(storageRef);
-          console.log('URL de téléchargement principale obtenue :', downloadURL);
 
           // Mettre à jour l'image principale dans Firestore
           await updateDoc(doc(db, 'decorations', photoId), {
             imageUri: downloadURL,
           });
-          console.log('Firestore mis à jour avec la nouvelle URL de l\'image principale');
 
           setSelectedImage(downloadURL);
           setVisibleImage(downloadURL);
@@ -482,12 +449,10 @@ const uploadPhotoToImageUris = async (localUri) => {
       const imageRef = ref(storage, selectedImage);
 
       await deleteObject(imageRef);
-      console.log('Image supprimée de Firebase Storage');
 
       await updateDoc(doc(db, 'decorations', photo.id), {
         imageUris: arrayRemove(selectedImage),
       });
-      console.log('Firestore mis à jour pour supprimer l\'URI de l\'image');
 
       dispatch({ type: 'DELETE_PHOTO_SUCCESS', payload: selectedImage });
       setSelectedImage(photo.imageUri);
@@ -517,7 +482,7 @@ const uploadPhotoToImageUris = async (localUri) => {
       const result = await ImagePicker.launchCameraAsync();
       if (!result.canceled) {
         const { uri } = result.assets[0];
-        const resizedUri = await resizeImage(uri);
+        const resizedUri = uri;
         setCapturedPhotoUri(resizedUri);
         setModalVisible(true);
       }
@@ -542,9 +507,8 @@ const uploadPhotoToImageUris = async (localUri) => {
         from: capturedPhotoUri,
         to: localUri,
       });
-
-      const resizedUri = await resizeImage(localUri);
-      await uploadAdditionalPhotoToFirebase(resizedUri);
+      
+      await uploadAdditionalPhotoToFirebase(localUri);
     } catch (error) {
       Alert.alert('Erreur', 'Impossible de sauvegarder et téléverser la photo.');
       console.error('Erreur lors de la sauvegarde et de l\'upload de la photo :', error);

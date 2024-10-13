@@ -419,7 +419,7 @@ export default function DashboardScreen() {
           <View>
             <BarChart
               data={barChartData}
-              width={Math.max(screenWidth - 30, formattedDates.length * 50)}
+              width={Math.max(screenWidth - 125, formattedDates.length * 50)}
               height={300}
               chartConfig={chartConfig}
               verticalLabelRotation={45}
@@ -441,7 +441,7 @@ export default function DashboardScreen() {
           <ScrollView horizontal={true}>
             <BarChart
               data={stats.armoireData}
-              width={Math.max(screenWidth - 40, stats.armoireData.labels.length * 70)}
+              width={Math.max(screenWidth - 40, stats.armoireData.labels.length * 125)}
               height={600}
               chartConfig={chartConfig}
               verticalLabelRotation={45}

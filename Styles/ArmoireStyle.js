@@ -41,8 +41,8 @@ const ArmoireStyle = StyleSheet.create({
     color: '#aaa',
   },
   photo: {
-    width: 50,
-    height: 50,
+    width: 60,
+    height: 60,
     borderRadius: 10,
   },
   noItemsText: {

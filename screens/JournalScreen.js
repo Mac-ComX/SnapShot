@@ -201,7 +201,7 @@ export default function JournalScreen() {
 
   // Fonction pour afficher chaque entrée du journal
   const renderJournalItem = ({ item }) => {
-    const statusColor = (item.status === 'Installée' || item.status === 'Fonctionnelle') ? '#4caf50' : '#f44336';
+    const statusColor = (item.status === 'Installée' || item.status === 'Fonctionnelle') ? '#4caf50' : '#FF5E00';
     const etatColor = (item.etat === 'Fonctionnelle') ? '#4caf50' : '#f44336';
 
     return (

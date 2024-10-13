@@ -73,7 +73,7 @@ function CustomDrawerContent(props) {
             </SvgText>
           </Svg>
           <Text style={styles.footerText}>
-            Version 1.5.2 Public by @Kmel
+            Version 1.5.3 Public by @Kmel
           </Text>
         </View>
       </DrawerContentScrollView>
@@ -242,7 +242,7 @@ function JournalStack() {
       <Stack.Screen 
         name="JournalScreen" 
         component={JournalScreen} 
-        options={{ title: 'Journal des Modifications', headerBackTitle: 'Retour' }}  
+        options={{ title: 'Journal des Modifications', headerShown: false }}  
       />
     </Stack.Navigator>
   );

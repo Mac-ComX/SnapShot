@@ -259,10 +259,10 @@ export default function PhotosRueScreen({ route }) {
         <View style={PhotosRueStyle.headerTextContainer}>
           <Text style={PhotosRueStyle.headerTitle} numberOfLines={1} ellipsizeMode="tail">
             {filter === 'tout'
-              ? 'Toutes les décorations'
+              ? 'Toutes Décors'
               : filter === 'installée'
-              ? 'Décorations installées'
-              : 'Décorations non installées'}
+              ? 'Décors installées'
+              : 'Décors non installées'}
           </Text>
         </View>
         <TouchableOpacity onPress={openModal} style={PhotosRueStyle.filterIcon}>

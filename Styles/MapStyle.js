@@ -2,6 +2,7 @@ import { StyleSheet } from 'react-native';
 
 const MapStyle = StyleSheet.create({
   
+  
     container: {
         flex: 1,
         justifyContent: 'center',
@@ -58,7 +59,7 @@ const MapStyle = StyleSheet.create({
       modalContent: {
         padding: 20,
         flexGrow: 1,
-        backgroundColor: '#ffffff',
+        backgroundColor: '#fff',
         borderRadius: 10, // Réduction du rayon des coins
         margin: 0,
         zIndex: 1,
@@ -194,10 +195,16 @@ const MapStyle = StyleSheet.create({
         fontWeight: 'bold',
       },
       bottomSheet: {
-        zIndex: 1000,
         elevation: 20,
         borderTopLeftRadius: 10, // Réduction du rayon des coins
         borderTopRightRadius: 10, // Réduction du rayon des coins
+      },
+      card: {
+        backgroundColor: '#eeeeee',
+        borderRadius: 10,
+        padding: 15,
+        flexDirection: 'row',
+        alignItems: 'center',
       },
       handleIndicator: {
         backgroundColor: '#ccc',
@@ -285,7 +292,7 @@ const MapStyle = StyleSheet.create({
         flex: 1, // Prendre tout l'espace disponible
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#f1f1f1',
+        backgroundColor: '#f0f0f0',
         borderRadius: 10, // Moins arrondi
         paddingHorizontal: 15,
         height: 38, // Réduction de la hauteur pour un champ plus mince
@@ -350,24 +357,18 @@ const MapStyle = StyleSheet.create({
         marginTop: 5,
         width: 200,   // Largeur de l'image
         height: 200,  // Hauteur de l'image
-        marginRight: 10, // Espacement entre les images
+        marginRight: 3, // Espacement entre les images
         borderRadius: 10, // Optionnel : coins arrondis pour les images
       },
-      sectionTitle: {
+      sectionTitre: {
         marginTop: 20,
-        fontSize: 18, // Augmentation de la taille pour un effet moderne
-        fontWeight: '600', // Moins lourd qu'un gras complet, pour un look léger
-        marginBottom: 10, // Plus d'espace en bas pour respirer
+        fontSize: 13, // Augmentation de la taille pour un effet moderne
+        fontWeight: '500', // Moins lourd qu'un gras complet, pour un look léger
+        marginBottom: 0, // Plus d'espace en bas pour respirer
         color: '#888888', // Une couleur bleu foncé plus douce, mais toujours visible
         letterSpacing: 1, // Espacement léger entre les lettres pour un style moderne
         textAlign: 'left', // Centrer le texte pour un look plus symétrique
-
-        textShadowRadius: 2, // Adoucit l'ombre
       },
-
-
-      
     });
     
-
 export default MapStyle;
