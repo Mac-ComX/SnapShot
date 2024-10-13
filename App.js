@@ -1,3 +1,4 @@
+import 'react-native-get-random-values';
 import * as React from 'react';
 import 'react-native-gesture-handler';
 import { View, Image, StyleSheet, StatusBar, Text, Animated, Easing } from 'react-native';

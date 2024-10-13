@@ -1,24 +1,36 @@
-import { StyleSheet } from 'react-native';
+// Styles/DetailsStyle.js
+
+import { StyleSheet, Dimensions } from 'react-native';
 
 const DetailsStyle = StyleSheet.create({
   scrollContainer: {
     flexGrow: 1,
-    paddingBottom: 20,
+    paddingBottom: 100, // Pour éviter que le contenu ne soit caché derrière le footer
   },
   container: {
     flex: 1,
     padding: 20,
     backgroundColor: '#f7f8fa',
   },
+  
   largePhoto: {
     width: '100%',
-    height: 450,
+    height: 500,
     borderRadius: 15,
-    marginBottom: 20,
+    marginVertical: 10,
     shadowColor: '#000',
     shadowOpacity: 0.2,
     shadowRadius: 15,
     elevation: 8,
+  },
+  deleteBadge: {
+    position: 'absolute',
+    top: 10,        // Distance du haut de l'image
+    right: 10,      // Distance du côté droit
+    backgroundColor: 'rgba(255, 0, 0, 0.8)', // Fond rouge semi-transparent
+    borderRadius: 20,
+    padding: 8,
+    zIndex: 10,     // Assurer que le badge soit superposé sur l'image
   },
   title: {
     fontSize: 24,
@@ -45,15 +57,10 @@ const DetailsStyle = StyleSheet.create({
     marginLeft: 10,
   },
   Prebold: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginRight: 5,
+    fontWeight: '600',
   },
   metadata: {
-    flex: 1,
-    flexWrap: 'wrap',
-    flexShrink: 1,
-    fontSize: 15,
+    fontSize: 16,
     color: '#34495e',
   },
   addressText: {
@@ -71,8 +78,7 @@ const DetailsStyle = StyleSheet.create({
     paddingVertical: 5,
     paddingHorizontal: 10,
     borderRadius: 20,
-    alignSelf: 'center',
-    left:-6,
+    alignSelf: 'flex-start',
     marginTop: 5,
   },
   mapButtonText: {
@@ -105,11 +111,11 @@ const DetailsStyle = StyleSheet.create({
     fontSize: 16,
   },
   footer: {
-    backgroundColor: '#f7f8fa',
-    padding: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+        backgroundColor: '#f7f8fa',
+        padding: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+      },
   saveButton: {
     backgroundColor: '#e63946',
     padding: 15,
@@ -125,40 +131,34 @@ const DetailsStyle = StyleSheet.create({
   },
   fullscreenModalOverlay: {
     flex: 1,
-    backgroundColor: 'transparent',
+    backgroundColor: 'rgba(0,0,0,0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   fullscreenImage: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    resizeMode: 'cover',
+    width: Dimensions.get('window').width * 0.9,
+    height: Dimensions.get('window').height * 0.7,
+    borderRadius: 10,
   },
   fullscreenModalClose: {
     position: 'absolute',
     top: 40,
     right: 20,
-    zIndex: 1,
   },
   fullscreenModalContent: {
-    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   fullscreenCommentContainer: {
     position: 'absolute',
-    bottom: 100,
-    left: 20,
-    right: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    borderRadius: 20,
+    bottom: 50,
+    backgroundColor: 'rgba(0,0,0,0.6)',
     padding: 10,
+    borderRadius: 5,
   },
   fullscreenComment: {
-    fontSize: 16,
     color: '#fff',
-    textAlign: 'center',
+    fontSize: 16,
   },
   modalTopButtons: {
     position: 'absolute',
@@ -180,10 +180,9 @@ const DetailsStyle = StyleSheet.create({
   },
   transparentCommentContainer: {
     position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 15,
+    bottom: 20,
+    left: 20,
+    right: 20,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.0)',
@@ -210,9 +209,8 @@ const DetailsStyle = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.75)',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   modalContainer: {
     flex: 1,
@@ -230,6 +228,28 @@ const DetailsStyle = StyleSheet.create({
     shadowRadius: 10,
     elevation: 5,
   },
+  modalOverlayOption: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainerOption: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContentOption: {
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 20,
+    width: '80%',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 5,
+  },
   modalTitle: {
     fontSize: 18,
     fontWeight: 'bold',
@@ -237,6 +257,14 @@ const DetailsStyle = StyleSheet.create({
     color: '#1b484e',
   },
   modalOption: {
+    padding: 15,
+    width: '100%',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    flexDirection: 'row',
+  },
+  modalOptionStatut: {
     padding: 15,
     width: '100%',
     alignItems: 'center',
@@ -263,18 +291,6 @@ const DetailsStyle = StyleSheet.create({
     fontSize: 16,
     color: '#333',
   },
-  commentContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    padding: 15,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 5,
-  },
   commentSection: {
     flex: 1,
     marginLeft: 10,
@@ -283,18 +299,11 @@ const DetailsStyle = StyleSheet.create({
     fontSize: 16,
     color: '#34495e',
   },
-  commentInputContainer: {
+  commentInput: {
     borderWidth: 1,
     borderColor: '#1abc9c',
     borderRadius: 40,
-    padding: 2,
-  },
-  commentInput: {
-    flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
-    borderRadius: 40,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    padding: 10,
     fontSize: 16,
     color: '#34495e',
   },
@@ -306,14 +315,42 @@ const DetailsStyle = StyleSheet.create({
   },
   menuButton: {
     position: 'absolute',
-    top: 10,       // Distance du haut de la photo
-    right: 10,     // Distance du côté droit
+    top: 40,       // Distance du haut de la photo
+    right: 30,     // Distance du côté droit
     backgroundColor: 'rgba(0, 0, 0, 0.5)', // Fond semi-transparent pour le contraste
     borderRadius: 20,
     padding: 8,    // Taille de l'icône
     zIndex: 10,    // Assure que le bouton soit superposé sur la photo
   },
-  
+  mainImageButtons: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    flexDirection: 'row',
+  },
+  editButton: {
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    padding: 8,
+    borderRadius: 20,
+    marginRight: 10,
+  },
+  deleteButtonMain: {
+    backgroundColor: 'rgba(255, 0, 0, 0.6)',
+    padding: 8,
+    borderRadius: 20,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)', // Fond semi-transparent
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullscreenModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.9)', // Fond presque opaque pour plein écran
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
 });
 
 export default DetailsStyle;

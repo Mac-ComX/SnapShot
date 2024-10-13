@@ -26,7 +26,8 @@ export default function ListeRuesScreen({ route }) {
 
       querySnapshot.forEach((doc) => {
         const data = doc.data();
-        if (data.rue) {
+        // Vérifier si la rue existe et si installationName ne commence pas par "ARM"
+        if (data.rue && (!data.installationName || !data.installationName.startsWith('ARM'))) {
           ruesSet.add(data.rue);
         }
       });
@@ -105,7 +106,6 @@ export default function ListeRuesScreen({ route }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    // padding: 20, // Retirer le padding ici pour éviter de décaler le header personnalisé
   },
   loadingContainer: {
     flex: 1,
