@@ -6,6 +6,8 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createDrawerNavigator, DrawerContentScrollView, DrawerItemList } from '@react-navigation/drawer';
 import { createStackNavigator } from '@react-navigation/stack';
 import Icon from 'react-native-vector-icons/Ionicons';
+import Icone from 'react-native-vector-icons/MaterialIcons';
+
 import MapScreen from './screens/MapScreen';
 import CameraScreen from './screens/previews/CameraScreen';
 import PreviewScreen from './screens/previews/PreviewScreen';
@@ -67,6 +69,7 @@ function CustomDrawerContent(props) {
               fill="#666"
               textAnchor="middle"
             >
+            C
             </SvgText>
           </Svg>
           <Text style={styles.footerText}>
@@ -308,7 +311,7 @@ export default function App() {
           options={{ 
             title: 'Armoires',
             drawerIcon: ({ color, size }) => (
-              <Icon name="browsers" size={size} color={color} />
+              <Icone name="door-sliding" size={size} color={color} />
             ),
           }}
         />

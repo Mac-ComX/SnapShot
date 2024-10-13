@@ -75,7 +75,7 @@ const formatDate = (date) => {
 const PhotoMarker = React.memo(({ photo, onPressDetails, onPressEditPosition, markerSize, onDragEnd, draggable, isHighlighted }) => {
   const borderColor = useMemo(() => {
     if (photo.installationType === 'Armoire') { 
-      return 'black'; // Couleur noire pour les armoires
+      return '#FF5E00'; // Couleur noire pour les armoires
     } else if (photo.functionalityStatus === 'En panne') {
       return 'red';
     } else if (photo.functionalityStatus === 'Fonctionnelle') {
@@ -579,6 +579,14 @@ export default function MapScreen() {
     longitudeDelta: 0.005,
   };
 
+  const getLastFourPhotos = (photos) => {
+    return photos
+      .filter(photo => photo.createdAt) // Assurer que la photo a une date
+      .sort((a, b) => parseDateTimeString(b.createdAt) - parseDateTimeString(a.createdAt)) // Trier par date décroissante
+      .slice(0, 4); // Ne garder que les 4 dernières
+  };
+  const defaultPhotos = getLastFourPhotos(photos);
+
   return (
     <View style={MapStyle.container}>
       {/* Bouton Menu */}
@@ -806,7 +814,29 @@ export default function MapScreen() {
                     <Text style={MapStyle.noResultsText}>Aucun résultat trouvé.</Text>
                   )
                 )}
+                {/* Affichage des résultats par défaut si aucun marqueur n'est sélectionné et aucune recherche effectuée */}
+                {/* Titre au-dessus des images */}
+                  <Text style={MapStyle.sectionTitle}>Dernières photos ajoutées</Text>
+                {searchQuery.trim() === '' && (
+                <FlatList
+                  data={defaultPhotos} // Afficher les 4 dernières photos
+                  keyExtractor={(item) => item.id}
+                  horizontal={true} // Activer le défilement horizontal
+                  showsHorizontalScrollIndicator={false} // Masquer la barre de défilement
+                  renderItem={({ item }) => (
+                    <TouchableOpacity onPress={() => handlePressDetails(item)}>
+                      <PublicImage 
+                        storagePath={item.imageUri}
+                        style={MapStyle.horizontalImage} // Appliquer un style pour la taille des images
+                      />
+                    </TouchableOpacity>
+                  )}
+                />
+                )}
+                
               </View>
+              
+              
             )}
           </TouchableWithoutFeedback>
         </KeyboardAvoidingView>

@@ -201,11 +201,11 @@ const MapStyle = StyleSheet.create({
       },
       handleIndicator: {
         backgroundColor: '#ccc',
-        width: 60,
+        width: 40,
         height: 5,
         borderRadius: 3,
         alignSelf: 'center',
-        marginVertical: 10,
+        marginVertical: 5,
       },
       calloutContainer: {
         width: 250,
@@ -341,11 +341,32 @@ const MapStyle = StyleSheet.create({
         color: '#7f8c8d',
       },
       noResultsText: {
-        marginTop: 20,
+        paddingTop: 20,
         textAlign: 'center',
         fontSize: 16,
         color: '#7f8c8d',
       },
+      horizontalImage: {
+        marginTop: 5,
+        width: 200,   // Largeur de l'image
+        height: 200,  // Hauteur de l'image
+        marginRight: 10, // Espacement entre les images
+        borderRadius: 10, // Optionnel : coins arrondis pour les images
+      },
+      sectionTitle: {
+        marginTop: 20,
+        fontSize: 18, // Augmentation de la taille pour un effet moderne
+        fontWeight: '600', // Moins lourd qu'un gras complet, pour un look léger
+        marginBottom: 10, // Plus d'espace en bas pour respirer
+        color: '#888888', // Une couleur bleu foncé plus douce, mais toujours visible
+        letterSpacing: 1, // Espacement léger entre les lettres pour un style moderne
+        textAlign: 'left', // Centrer le texte pour un look plus symétrique
+
+        textShadowRadius: 2, // Adoucit l'ombre
+      },
+
+
+      
     });
     
 
