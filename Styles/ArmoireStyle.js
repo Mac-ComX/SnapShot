@@ -23,6 +23,9 @@ const ArmoireStyle = StyleSheet.create({
     padding: 15,
     flexDirection: 'row',
     alignItems: 'center',
+    elevation: 3,
+    overflow: 'hidden',
+    borderRadius: 15,
   },
   textContainer: {
     flex: 1,
@@ -34,16 +37,17 @@ const ArmoireStyle = StyleSheet.create({
   },
   status: {
     fontSize: 14,
-    color: '#888',
+    color: '#3498db',
   },
   date: {
     fontSize: 12,
     color: '#aaa',
   },
   photo: {
-    width: 60,
-    height: 60,
-    borderRadius: 10,
+    width: 70,
+    height: 70,
+    borderRadius: 15,
+    marginRight: 15,
   },
   noItemsText: {
     textAlign: 'center',

@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useRef, useReducer } from 'react';
+// DetailsScreen.js
+
+import React, { useState, useEffect, useRef, useReducer } from 'react'; 
 import { 
   View, 
   Text, 
@@ -19,13 +21,10 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   ActivityIndicator,
-  Animated,
-  Easing
 } from 'react-native';
 import { MaterialIcons, MaterialCommunityIcons, Entypo, FontAwesome } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';  
-import * as ImageManipulator from 'expo-image-manipulator';
 import { 
   getStorage, 
   ref, 
@@ -48,7 +47,7 @@ import {
 } from 'firebase/firestore';
 import { useNavigation } from '@react-navigation/native';
 import { db } from '../../services/firebase';
-import PublicImage from '../../components/PublicImage'; // Assurez-vous que ce composant est bien importé
+import PublicImage from '../../components/PublicImage';
 import DetailsStyle from '../../Styles/DetailsStyle';
 
 /**
@@ -72,7 +71,7 @@ const formatDate = (dateString) => {
 };
 
 /**
- * Reducer pour gérer les états des photos
+ * Reducer pour gérer les états des photos additionnelles
  */
 const initialPhotoState = {
   additionalPhotos: [],
@@ -99,15 +98,15 @@ function photoReducer(state, action) {
       };
     case 'UPLOAD_PHOTO_FAILURE':
       return { ...state, isUploading: false, error: action.payload };
-    case 'DELETE_PHOTO_SUCCESS':
-      return { 
-        ...state, 
-        additionalPhotos: state.additionalPhotos.filter(uri => uri !== action.payload) 
-      };
     default:
       return state;
   }
 }
+
+const formatInstallationName = (name) => {
+  // Utiliser une expression régulière pour supprimer le tiret et les chiffres à la fin
+  return name.replace(/-\d+$/, '');
+};
 
 export default function DetailsScreen({ route }) {
   const { photo } = route.params;
@@ -116,14 +115,17 @@ export default function DetailsScreen({ route }) {
   /** 
    * États 
    */
-  // Reducer pour la gestion des photos
+  // État local pour les données de la photo
+  const [currentPhoto, setCurrentPhoto] = useState(photo);
+
+  // Reducer pour la gestion des photos additionnelles
   const [photoState, dispatch] = useReducer(photoReducer, initialPhotoState);
 
   // Autres états
-  const [selectedImage, setSelectedImage] = useState(photo.imageUri);
-  const [capturedPhotoUri, setCapturedPhotoUri] = useState(null);
-  const [visibleImage, setVisibleImage] = useState(photo.imageUri);
+  const [selectedImage, setSelectedImage] = useState(currentPhoto.imageUri);
+  const [visibleImage, setVisibleImage] = useState(currentPhoto.imageUri);
   const [selectedAdditionalPhoto, setSelectedAdditionalPhoto] = useState(null);
+  const [capturedPhotoUri, setCapturedPhotoUri] = useState(null);
 
   // UI et Modaux
   const [modalVisible, setModalVisible] = useState(false);
@@ -134,10 +136,10 @@ export default function DetailsScreen({ route }) {
   const [isDeleting, setIsDeleting] = useState(false); // Pour l'indicateur de suppression
 
   // Commentaires et États
-  const [comment, setComment] = useState(photo.comment || '');
+  const [comment, setComment] = useState(currentPhoto.comment || '');
   const [commentAdditional, setCommentAdditional] = useState('');
-  const [status, setStatus] = useState(photo.installationStatus || 'Installée');
-  const [etat, setEtat] = useState(photo.functionalityStatus || 'Fonctionnelle');
+  const [status, setStatus] = useState(currentPhoto.installationStatus || 'Installée');
+  const [etat, setEtat] = useState(currentPhoto.functionalityStatus || 'Fonctionnelle');
   const [isEditingStatus, setIsEditingStatus] = useState(false);
   const [isEditingEtat, setIsEditingEtat] = useState(false);
   const [isEditingComment, setIsEditingComment] = useState(false);
@@ -156,7 +158,7 @@ export default function DetailsScreen({ route }) {
    */
   useEffect(() => {
     fetchAdditionalPhotos();
-  }, [photo.installationID]);
+  }, [currentPhoto.installationID]);
 
   /**
    * Fonctions Utilitaires
@@ -173,30 +175,12 @@ export default function DetailsScreen({ route }) {
   };
 
   /**
-   * Redimensionner et compresser une image
-   */
-  // const resizeImage = async (uri) => {
-  //   try {
-  //     const manipResult = await ImageManipulator.manipulateAsync(
-  //       uri,
-  //       [{ resize: { width: 800 } }],
-  //       { compress: 0.9, format: ImageManipulator.SaveFormat.JPEG }
-  //     );
-  //     console.log('Image redimensionnée et compressée :', manipResult.uri);
-  //     return manipResult.uri;
-  //   } catch (error) {
-  //     console.error('Erreur lors du redimensionnement de l\'image :', error);
-  //     throw error;
-  //   }
-  // };
-
-  /**
    * Récupérer les photos additionnelles depuis Firestore
    */
   const fetchAdditionalPhotos = async () => {
     dispatch({ type: 'FETCH_PHOTOS_REQUEST' });
     try {
-      const collectionRef = collection(doc(db, 'decorations', photo.installationID), 'photos-additionnelles');
+      const collectionRef = collection(doc(db, 'decorations', currentPhoto.installationID), 'photos-additionnelles');
       const querySnapshot = await getDocs(collectionRef);
       const photos = querySnapshot.docs.map((doc) => doc.data());
       dispatch({ type: 'FETCH_PHOTOS_SUCCESS', payload: photos });
@@ -216,140 +200,92 @@ export default function DetailsScreen({ route }) {
   };
 
   /**
- * Capturer une nouvelle photo principale supplémentaire avec la caméra et l'uploader dans le tableau imageUris
- */
-const captureNewPhotoWithCamera = async () => {
-  try {
-    // Demander la permission d'accéder à la caméra
-    const permission = await ImagePicker.requestCameraPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert('Permission refusée', 'Vous devez autoriser l\'accès à la caméra.');
-      return;
-    }
-
-    // Ouvrir la caméra pour capturer une nouvelle image
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      quality: 1,
-    });
-
-    // Si l'utilisateur ne l'a pas annulée
-    if (!result.canceled) {
-      const { uri } = result.assets[0];
-      const resizedUri = uri;
-
-      // Uploader la nouvelle image principale dans le tableau imageUris
-      await uploadPhotoToImageUris(resizedUri);
-    }
-  } catch (error) {
-    console.error('Erreur lors de la capture de la photo :', error);
-    Alert.alert('Erreur', 'Impossible de capturer la photo.');
-  }
-};
-
-/**
- * Uploader une photo et l'ajouter dans le tableau imageUris de Firebase
- */
-const uploadPhotoToImageUris = async (localUri) => {
-  try {
-    const blob = await uriToBlob(localUri);
-    const installationName = photo.installationName;
-    const photoId = photo.id;
-
-    // Générer un nom pour la nouvelle photo
-    const photoName = `${installationName}-supplémentaire-${Date.now()}.jpg`;
-    const storage = getStorage();
-    const storageRef = ref(storage, `photos/${photoName}`);
-
-    // Uploader la photo sur Firebase Storage
-    const uploadTask = uploadBytesResumable(storageRef, blob);
-
-    uploadTask.on('state_changed', 
-      (snapshot) => {
-        // Progrès du téléversement (optionnel)
-      }, 
-      (error) => {
-        console.error('Erreur durant l\'upload de la photo principale supplémentaire :', error);
-        Alert.alert('Erreur', `Erreur durant l'upload : ${error.message}`);
-      }, 
-      async () => {
-        // Récupérer l'URL de téléchargement après l'upload
-        const downloadURL = await getDownloadURL(storageRef);
-
-        // Mettre à jour Firestore pour ajouter la nouvelle URL au tableau imageUris
-        await updateDoc(doc(db, 'decorations', photoId), {
-          imageUris: arrayUnion(downloadURL), // Ajouter la nouvelle URL dans le tableau imageUris
-        });
-
-        Alert.alert('Succès', 'Photo principale supplémentaire ajoutée avec succès !');
-      }
-    );
-  } catch (error) {
-    console.error('Erreur lors de l\'upload de la photo :', error);
-    Alert.alert('Erreur', `Impossible d'uploader la photo : ${error.message}`);
-  }
-};
-
-  /**
-   * Uploader une photo additionnelle sur Firebase
+   * Capturer une nouvelle photo principale supplémentaire avec la caméra et l'uploader dans le tableau imageUris
    */
-  const uploadAdditionalPhotoToFirebase = async (localUri) => {
-    if (photoState.isUploading) {
-      Alert.alert('Upload en cours', 'Veuillez attendre que l\'upload précédent soit terminé.');
-      return;
-    }
-
-    dispatch({ type: 'UPLOAD_PHOTO_REQUEST' });
-
+  const captureNewPhotoWithCamera = async () => {
     try {
-      const blob = await uriToBlob(localUri);
-      const installationName = photo.installationName;
-      const photoId = photo.id;
-
-      if (!installationName || !photoId) {
-        throw new Error("Installation Name ou Photo ID est manquant.");
+      // Demander la permission d'accéder à la caméra
+      const permission = await ImagePicker.requestCameraPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert('Permission refusée', 'Vous devez autoriser l\'accès à la caméra.');
+        return;
       }
 
-      const photoName = `${installationName}-additionnel-${Date.now()}.jpg`;
-      const storage = getStorage();
-      const storageRef = ref(storage, `photos-additionnelles/${photoName}`);
+      // Ouvrir la caméra pour capturer une nouvelle image
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 1,
+      });
 
-      const uploadTask = uploadBytesResumable(storageRef, blob);
+      // Si l'utilisateur ne l'a pas annulée
+      if (!result.canceled) {
+        const { uri } = result.assets[0];
+        const resizedUri = uri;
 
-      uploadTask.on('state_changed',
-        (snapshot) => {
-          // Vous pouvez gérer le progrès ici si nécessaire
-        }, 
-        (error) => {
-          console.error('Erreur durant l\'upload additionnel :', error);
-          Alert.alert('Erreur', `Erreur durant l'upload additionnel : ${error.message}`);
-          dispatch({ type: 'UPLOAD_PHOTO_FAILURE', payload: error.message });
-        }, 
-        async () => {
-          const downloadURL = await getDownloadURL(storageRef);
-
-          await addDoc(collection(db, 'decorations', photo.installationID, 'photos-additionnelles'), {
-            imageUri: downloadURL,
-            localImageUri: localUri,
-            comment: commentAdditional,
-            createdAt: serverTimestamp(),
-          });
-
-          dispatch({ type: 'UPLOAD_PHOTO_SUCCESS', payload: downloadURL });
-          Alert.alert('Succès', 'Photo sauvegardée et téléversée avec succès !');
-          setModalVisible(false);
-        }
-      );
+        // Uploader la nouvelle image principale dans le tableau imageUris
+        await uploadPhotoToImageUris(resizedUri);
+      }
     } catch (error) {
-      console.error('Erreur lors de l\'upload de la photo additionnelle :', error);
-      Alert.alert('Erreur', `Impossible d'uploader la photo additionnelle : ${error.message}`);
-      dispatch({ type: 'UPLOAD_PHOTO_FAILURE', payload: error.message });
+      console.error('Erreur lors de la capture de la photo :', error);
+      Alert.alert('Erreur', 'Impossible de capturer la photo.');
     }
   };
 
   /**
-   * Remplacer l'image principale avec une nouvelle photo principal
+   * Uploader une photo et l'ajouter dans le tableau imageUris de Firebase
+   */
+  const uploadPhotoToImageUris = async (localUri) => {
+    try {
+      const blob = await uriToBlob(localUri);
+      const installationName = currentPhoto.installationName;
+      const photoId = currentPhoto.id;
+
+      // Générer un nom pour la nouvelle photo
+      const photoName = `${installationName}-supplémentaire-${Date.now()}.jpg`;
+      const storage = getStorage();
+      const storageRef = ref(storage, `photos/${photoName}`);
+
+      // Uploader la photo sur Firebase Storage
+      const uploadTask = uploadBytesResumable(storageRef, blob);
+
+      uploadTask.on('state_changed', 
+        (snapshot) => {
+          // Progrès du téléversement (optionnel)
+        }, 
+        (error) => {
+          console.error('Erreur durant l\'upload de la photo principale supplémentaire :', error);
+          Alert.alert('Erreur', `Erreur durant l'upload : ${error.message}`);
+        }, 
+        async () => {
+          // Récupérer l'URL de téléchargement après l'upload
+          const downloadURL = await getDownloadURL(storageRef);
+
+          // Mettre à jour Firestore pour ajouter la nouvelle URL dans le tableau imageUris
+          await updateDoc(doc(db, 'decorations', photoId), {
+            imageUris: arrayUnion(downloadURL), // Ajouter la nouvelle URL dans le tableau imageUris
+          });
+
+          // Mettre à jour l'état local
+          setCurrentPhoto(prevPhoto => ({
+            ...prevPhoto,
+            imageUris: [...(prevPhoto.imageUris || []), downloadURL],
+          }));
+
+          setSelectedImage(downloadURL);
+          setVisibleImage(downloadURL);
+
+          Alert.alert('Succès', 'Photo principale supplémentaire ajoutée avec succès !');
+        }
+      );
+    } catch (error) {
+      console.error('Erreur lors de l\'upload de la photo :', error);
+      Alert.alert('Erreur', `Impossible d'uploader la photo : ${error.message}`);
+    }
+  };
+
+  /**
+   * Remplacer l'image principale avec une nouvelle photo principale
    */
   const replaceMainImage = async () => {
     try {
@@ -368,11 +304,6 @@ const uploadPhotoToImageUris = async (localUri) => {
       if (!result.canceled) {
         const { uri } = result.assets[0];
         const resizedUri = uri;
-
-        // Optionnel : ajouter l'ancienne image principale aux photos additionnelles
-        // if (selectedImage !== photo.imageUri) {
-        //   await uploadAdditionalPhotoToFirebase(selectedImage);
-        // }
 
         // Uploader la nouvelle image principale
         await uploadMainImageToFirebase(resizedUri);
@@ -396,8 +327,8 @@ const uploadPhotoToImageUris = async (localUri) => {
 
     try {
       const blob = await uriToBlob(localUri);
-      const installationName = photo.installationName;
-      const photoId = photo.id;
+      const installationName = currentPhoto.installationName;
+      const photoId = currentPhoto.id;
 
       if (!installationName || !photoId) {
         throw new Error("Installation Name ou Photo ID est manquant.");
@@ -426,6 +357,12 @@ const uploadPhotoToImageUris = async (localUri) => {
             imageUri: downloadURL,
           });
 
+          // Mettre à jour l'état local
+          setCurrentPhoto(prevPhoto => ({
+            ...prevPhoto,
+            imageUri: downloadURL,
+          }));
+
           setSelectedImage(downloadURL);
           setVisibleImage(downloadURL);
           dispatch({ type: 'UPLOAD_PHOTO_SUCCESS', payload: downloadURL });
@@ -440,23 +377,38 @@ const uploadPhotoToImageUris = async (localUri) => {
   };
 
   /**
-   * Supprimer une photo additionnelle
+   * Supprimer une photo principale supplémentaire
    */
   const deletePhoto = async () => {
     setIsDeleting(true);
     try {
+      // Vérifier si la photo sélectionnée est la photo principale
+      if (selectedImage === currentPhoto.imageUri) {
+        Alert.alert('Action non autorisée', 'Vous ne pouvez pas supprimer la photo principale.');
+        setIsDeleting(false);
+        closeMenu();
+        return;
+      }
+
       const storage = getStorage();
       const imageRef = ref(storage, selectedImage);
 
+      // Supprimer la photo du stockage Firebase
       await deleteObject(imageRef);
 
-      await updateDoc(doc(db, 'decorations', photo.id), {
+      // Supprimer l'URL de la photo de imageUris dans Firestore
+      await updateDoc(doc(db, 'decorations', currentPhoto.id), {
         imageUris: arrayRemove(selectedImage),
       });
 
-      dispatch({ type: 'DELETE_PHOTO_SUCCESS', payload: selectedImage });
-      setSelectedImage(photo.imageUri);
-      setVisibleImage(photo.imageUri);
+      // Mettre à jour l'état local
+      setCurrentPhoto(prevPhoto => ({
+        ...prevPhoto,
+        imageUris: prevPhoto.imageUris.filter(uri => uri !== selectedImage),
+      }));
+
+      setSelectedImage(currentPhoto.imageUri); // Revenir à la photo principale
+      setVisibleImage(currentPhoto.imageUri); // Mettre à jour l'affichage
 
       Alert.alert('Succès', 'Photo supprimée avec succès');
     } catch (error) {
@@ -500,7 +452,7 @@ const uploadPhotoToImageUris = async (localUri) => {
 
     try {
       dispatch({ type: 'UPLOAD_PHOTO_REQUEST' });
-      const installationName = photo.installationName;
+      const installationName = currentPhoto.installationName;
       const localUri = `${FileSystem.documentDirectory}${installationName}_photo.jpg`;
 
       await FileSystem.copyAsync({
@@ -517,11 +469,70 @@ const uploadPhotoToImageUris = async (localUri) => {
   };
 
   /**
+   * Uploader une photo additionnelle sur Firebase
+   */
+  const uploadAdditionalPhotoToFirebase = async (localUri) => {
+    if (photoState.isUploading) {
+      Alert.alert('Upload en cours', 'Veuillez attendre que l\'upload précédent soit terminé.');
+      return;
+    }
+
+    dispatch({ type: 'UPLOAD_PHOTO_REQUEST' });
+
+    try {
+      const blob = await uriToBlob(localUri);
+      const installationName = currentPhoto.installationName;
+      const photoId = currentPhoto.id;
+
+      if (!installationName || !photoId) {
+        throw new Error("Installation Name ou Photo ID est manquant.");
+      }
+
+      const photoName = `${installationName}-additionnel-${Date.now()}.jpg`;
+      const storage = getStorage();
+      const storageRef = ref(storage, `photos-additionnelles/${photoName}`);
+
+      const uploadTask = uploadBytesResumable(storageRef, blob);
+
+      uploadTask.on('state_changed',
+        (snapshot) => {
+          // Vous pouvez gérer le progrès ici si nécessaire
+        }, 
+        (error) => {
+          console.error('Erreur durant l\'upload additionnel :', error);
+          Alert.alert('Erreur', `Erreur durant l'upload additionnel : ${error.message}`);
+          dispatch({ type: 'UPLOAD_PHOTO_FAILURE', payload: error.message });
+        }, 
+        async () => {
+          const downloadURL = await getDownloadURL(storageRef);
+
+          await addDoc(collection(db, 'decorations', currentPhoto.installationID, 'photos-additionnelles'), {
+            imageUri: downloadURL,
+            localImageUri: localUri,
+            comment: commentAdditional,
+            createdAt: serverTimestamp(),
+          });
+
+          dispatch({ type: 'UPLOAD_PHOTO_SUCCESS', payload: { imageUri: downloadURL, comment: commentAdditional } });
+          Alert.alert('Succès', 'Photo sauvegardée et téléversée avec succès !');
+          setModalVisible(false);
+          setCommentAdditional(''); // Réinitialiser le commentaire
+          setCapturedPhotoUri(null); // Réinitialiser l'URI capturé
+        }
+      );
+    } catch (error) {
+      console.error('Erreur lors de l\'upload de la photo additionnelle :', error);
+      Alert.alert('Erreur', `Impossible d'uploader la photo additionnelle : ${error.message}`);
+      dispatch({ type: 'UPLOAD_PHOTO_FAILURE', payload: error.message });
+    }
+  };
+
+  /**
    * Sauvegarder les mises à jour dans Firestore
    */
   const saveUpdates = async () => {
     try {
-      const installationDoc = doc(db, 'decorations', photo.id);
+      const installationDoc = doc(db, 'decorations', currentPhoto.id);
       const docSnapshot = await getDoc(installationDoc);
 
       if (!docSnapshot.exists()) {
@@ -550,9 +561,23 @@ const uploadPhotoToImageUris = async (localUri) => {
         address: updatedAddress,
       });
 
+      // Mettre à jour l'état local
+      setCurrentPhoto(prevPhoto => ({
+        ...prevPhoto,
+        installationStatus: status,
+        functionalityStatus: etat,
+        comment: comment,
+      }));
+
       // Mettre à jour ou créer un document dans 'journalsMaint'
-      const q = query(collection(db, 'journalsMaint'), where('installationID', '==', photo.installationID));
+      const q = query(collection(db, 'journalsMaint'), where('installationID', '==', currentPhoto.installationID));
       const querySnapshot = await getDocs(q);
+
+      const allPhotoUris = [
+        currentPhoto.imageUri,
+        ...(currentPhoto.imageUris || []),
+        ...photoState.additionalPhotos.map(p => p.imageUri),
+      ];
 
       if (!querySnapshot.empty) {
         const existingDoc = querySnapshot.docs[0];
@@ -561,19 +586,19 @@ const uploadPhotoToImageUris = async (localUri) => {
           etat: etat,
           comment: comment,
           modificationDate: serverTimestamp(),
-          photos: arrayUnion(photo.imageUri, ...photoState.additionalPhotos.map(p => p.imageUri)),
+          photos: arrayUnion(...allPhotoUris),
           commentHistory: oldCommentHistory,
           address: updatedAddress,
         });
       } else {
         await addDoc(collection(db, 'journalsMaint'), {
-          installationID: photo.installationID,
-          installationName: photo.installationName,
+          installationID: currentPhoto.installationID,
+          installationName: currentPhoto.installationName,
           status: status,
           etat: etat,
           comment: comment,
           modificationDate: serverTimestamp(),
-          photos: [photo.imageUri, ...photoState.additionalPhotos.map(p => p.imageUri)],
+          photos: allPhotoUris,
           commentHistory: oldCommentHistory,
           address: updatedAddress,
         });
@@ -637,12 +662,12 @@ const uploadPhotoToImageUris = async (localUri) => {
    * Gérer le clic sur l'adresse pour ouvrir la carte
    */
   const handleAddressPress = () => {
-    const { latitude, longitude } = photo;
+    const { latitude, longitude } = currentPhoto;
     if (latitude && longitude) {
       navigation.navigate('MapScreen', {
         targetLatitude: latitude,
         targetLongitude: longitude,
-        targetPhotoId: photo.id,
+        targetPhotoId: currentPhoto.id,
       });
     } else {
       Alert.alert('Erreur', 'Coordonnées géographiques non disponibles pour cette adresse.');
@@ -653,7 +678,7 @@ const uploadPhotoToImageUris = async (localUri) => {
    * Obtenir l'adresse correctement
    */
   const getAddress = () => {
-    const { address } = photo;
+    const { address } = currentPhoto;
     return address && address.trim() !== "" ? address : "Adresse non disponible";
   };
 
@@ -687,9 +712,14 @@ const uploadPhotoToImageUris = async (localUri) => {
 
           {/* Slider d'images horizontal */}
           <FlatList
-            data={photo.imageUris && photo.imageUris.length > 0 ? [photo.imageUri, ...photo.imageUris] : [photo.imageUri]} 
+            data={
+              currentPhoto.imageUris && currentPhoto.imageUris.length > 0 
+                ? [currentPhoto.imageUri, ...currentPhoto.imageUris] 
+                : [currentPhoto.imageUri]
+            } 
             renderItem={({ item }) => (
               <TouchableOpacity onPress={() => {
+                setSelectedImage(item);
                 setVisibleImage(item);
                 setIsMainImageFullScreen(true);
               }}>
@@ -721,7 +751,7 @@ const uploadPhotoToImageUris = async (localUri) => {
                   <View style={DetailsStyle.modalContentOption}>
                     <Text style={DetailsStyle.modalTitle}>Options</Text>
 
-                    {/* Option pour prendre une nouvelle photo additionnelle */}
+                    {/* Option pour prendre une nouvelle photo principale supplémentaire */}
                     <TouchableOpacity 
                       style={DetailsStyle.modalOption} 
                       onPress={captureNewPhotoWithCamera} 
@@ -765,7 +795,7 @@ const uploadPhotoToImageUris = async (localUri) => {
           </Modal>
 
           {/* Informations de l'installation */}
-          <Text style={DetailsStyle.title}>{photo.installationName}</Text> 
+          <Text style={DetailsStyle.title}>{formatInstallationName(currentPhoto.installationName)}</Text>
 
           {/* Adresse */}
           <View style={DetailsStyle.infoContainer}>
@@ -787,7 +817,7 @@ const uploadPhotoToImageUris = async (localUri) => {
           <View style={DetailsStyle.infoContainer}>
             <MaterialIcons name="calendar-today" size={24} color="#3498db" />
             <Text style={DetailsStyle.metadata}>
-              <Text style={DetailsStyle.Prebold}> Date : </Text>{formatDate(photo.createdAt)}
+              <Text style={DetailsStyle.Prebold}> Date : </Text>{formatDate(currentPhoto.createdAt)}
             </Text>
           </View>
 
@@ -795,15 +825,15 @@ const uploadPhotoToImageUris = async (localUri) => {
           <View style={DetailsStyle.infoContainer}>
             <MaterialCommunityIcons name="lightbulb-on-outline" size={24} color="#f1c40f" />
             <Text style={DetailsStyle.metadata}>
-              <Text style={DetailsStyle.Prebold}> Type : </Text>{photo.installationType || "Non disponible"}
+              <Text style={DetailsStyle.Prebold}> Type : </Text>{currentPhoto.installationType || "Non disponible"}
             </Text>
           </View>
 
           {/* Armoire */}
           <View style={DetailsStyle.infoContainer}>
-            <MaterialIcons name="door-sliding" size={24} color="#1abc9c" />
+            <MaterialIcons name="door-sliding" size={24} color="#808080" />
             <Text style={DetailsStyle.metadata}>
-              <Text style={DetailsStyle.Prebold}> Armoire : </Text>{photo.armoire || "Non disponible"}
+              <Text style={DetailsStyle.Prebold}> Armoire : </Text>{currentPhoto.armoire || "Non disponible"}
             </Text>
           </View>
 

@@ -38,6 +38,11 @@ import { Keyboard, TouchableWithoutFeedback } from 'react-native';
 import PublicImage from '../../components/PublicImage';
 import DetailsDebugStyle from '../../Styles/DetailsDebugStyle';
 
+const formatInstallationName = (name) => {
+  // Utiliser une expression régulière pour supprimer le tiret et les chiffres à la fin
+  return name.replace(/-\d+$/, '');
+};
+
 export default function DetailsScreen({ route }) {
   const { photo } = route.params;
   const [capturedPhotoUri, setCapturedPhotoUri] = useState(null);
@@ -266,7 +271,8 @@ export default function DetailsScreen({ route }) {
               style={DetailsDebugStyle.largePhoto}
             />
           </TouchableOpacity>
-          <Text style={DetailsDebugStyle.title}>{photo.installationName}</Text> 
+          <Text style={DetailsDebugStyle.title}>{formatInstallationName(photo.installationName)}</Text>
+ 
           <View style={DetailsDebugStyle.infoContainer}>
             <MaterialIcons name="location-on" size={24} color="#3498db" />
             <View style={DetailsDebugStyle.textContainer}>

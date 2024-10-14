@@ -73,7 +73,7 @@ function CustomDrawerContent(props) {
             </SvgText>
           </Svg>
           <Text style={styles.footerText}>
-            Version 1.5.3 Public by @Kmel
+            Version 1.5.4 Public by @Kmel
           </Text>
         </View>
       </DrawerContentScrollView>
@@ -311,7 +311,7 @@ export default function App() {
           options={{ 
             title: 'Armoires',
             drawerIcon: ({ color, size }) => (
-              <Icone name="door-sliding" size={size} color={color} />
+              <Icone name="door-sliding" size={25} color={color} />
             ),
           }}
         />

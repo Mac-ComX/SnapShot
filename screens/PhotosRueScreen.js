@@ -18,6 +18,12 @@ import { Swipeable } from 'react-native-gesture-handler';
 import PublicImage from '../components/PublicImage';
 import PhotosRueStyle from '../Styles/PhotosRueStyle';
 
+const formatInstallationName = (name) => {
+  // Utiliser une expression régulière pour supprimer le tiret et les chiffres à la fin
+  return name.replace(/-\d+$/, '');
+};
+
+
 export default function PhotosRueScreen({ route }) {
   const { rue, ville } = route.params || {};
   const navigation = useNavigation();
@@ -187,6 +193,7 @@ export default function PhotosRueScreen({ route }) {
   };
 
   const PhotoItem = ({ item }) => {
+    const installationName = formatInstallationName(item.installationName || '');  // Formater le nom ici
     const [isSwiped, setIsSwiped] = useState(false);
     const swipeableRef = useRef(null);
 
@@ -223,7 +230,7 @@ export default function PhotosRueScreen({ route }) {
                 style={PhotosRueStyle.photo}
               />
               <View style={PhotosRueStyle.textContainer}>
-                <Text style={PhotosRueStyle.title}>{item.installationName || 'Nom indisponible'}</Text>
+                <Text style={PhotosRueStyle.title}>{installationName || 'Nom indisponible'}</Text>
                 <Text style={[PhotosRueStyle.status, { color: item.installationStatus === 'Installée' ? '#27ae60' : '#e67e22' }]}>
                   {item.installationStatus || 'Statut non spécifié'}
                 </Text>

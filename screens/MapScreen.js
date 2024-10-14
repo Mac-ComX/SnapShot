@@ -14,27 +14,33 @@ import {
   Platform,
   Easing,
   TextInput,
-  FlatList,
   KeyboardAvoidingView,
   TouchableWithoutFeedback,
   Keyboard,
+  ScrollView,
+  StyleSheet
 } from 'react-native';
-import MapView, { Marker, Callout, Camera } from 'react-native-maps';
+import MapView, { Marker, Callout } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import { collection, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetScrollView, BottomSheetFlatList } from '@gorhom/bottom-sheet';
 import SvgCircle from '../components/svg/SvgCircle';
 import PublicImage from '../components/PublicImage';
 import MapStyle from '../Styles/MapStyle';
 import { Picker } from '@react-native-picker/picker';
+import Svg, { G, Circle } from 'react-native-svg';
 
 // Importez votre image de logo ici
 import LogoImage from '../assets/logoUser.jpg'; // Assurez-vous que le chemin est correct
 
 const { height, width } = Dimensions.get('window');
+const screenWidth = Dimensions.get('window').width;
+const radius = 90;
+const strokeWidth = 40;
+const center = radius + strokeWidth / 2;
 
 // Fonction pour calculer la distance entre deux coordonnées GPS
 const calculateDistance = (coord1, coord2) => {
@@ -75,7 +81,7 @@ const formatDate = (date) => {
 const PhotoMarker = React.memo(({ photo, onPressDetails, onPressEditPosition, markerSize, onDragEnd, draggable, isHighlighted }) => {
   const borderColor = useMemo(() => {
     if (photo.installationType === 'Armoire') { 
-      return '#FF5E00'; // Couleur noire pour les armoires
+      return '#FF5E00'; // Couleur orange pour les armoires
     } else if (photo.functionalityStatus === 'En panne') {
       return 'red';
     } else if (photo.functionalityStatus === 'Fonctionnelle') {
@@ -199,6 +205,9 @@ export default function MapScreen() {
   // Nouvel État pour la Barre de Recherche
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Nouvel État pour les statistiques du graphique
+  const [photosByType, setPhotosByType] = useState({});
+  
   const sheetRef = useRef(null);
   const mapRef = useRef(null);
   const navigation = useNavigation();
@@ -227,6 +236,7 @@ export default function MapScreen() {
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         if (isMounted) setLoading(false);
+        Alert.alert('Permission refusée', 'Permission de localisation nécessaire pour utiliser la carte.');
         return;
       }
 
@@ -561,6 +571,43 @@ export default function MapScreen() {
     }
   }, [bottomSheetIndex]);
 
+  // Fonction pour obtenir les 4 dernières photos
+  const getLastFourPhotos = (photos) => {
+    return photos
+      .filter(photo => photo.createdAt) // Assurer que la photo a une date
+      .sort((a, b) => parseDateTimeString(b.createdAt) - parseDateTimeString(a.createdAt)) // Trier par date décroissante
+      .slice(0, 4); // Ne garder que les 4 dernières
+  };
+  const defaultPhotos = getLastFourPhotos(photos);
+
+  // Calcul des statistiques pour le graphique
+  useEffect(() => {
+    const calculateStats = () => {
+      const typeCounts = photos.reduce((acc, photo) => {
+        const type = photo.installationType || 'Type inconnu';
+        if (type !== 'Armoire') { // Exclure les armoires
+          acc[type] = (acc[type] || 0) + 1;
+        }
+        return acc;
+      }, {});
+      setPhotosByType(typeCounts);
+    };
+
+    calculateStats();
+  }, [photos]);
+
+  // Préparation des données pour le graphique
+  const pieChartData = useMemo(() => {
+    return Object.keys(photosByType).map((type, index) => ({
+      name: type,
+      percentage: photosByType[type],
+      color: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'][index % 5],
+    }));
+  }, [photosByType]);
+
+  const totalPercentage = pieChartData.reduce((acc, item) => acc + item.percentage, 0);
+  let startAngle = 0;
+
   // Affichage du loader pendant le chargement des données
   if (loading || !location) {
     return (
@@ -579,13 +626,10 @@ export default function MapScreen() {
     longitudeDelta: 0.005,
   };
 
-  const getLastFourPhotos = (photos) => {
-    return photos
-      .filter(photo => photo.createdAt) // Assurer que la photo a une date
-      .sort((a, b) => parseDateTimeString(b.createdAt) - parseDateTimeString(a.createdAt)) // Trier par date décroissante
-      .slice(0, 4); // Ne garder que les 4 dernières
-  };
-  const defaultPhotos = getLastFourPhotos(photos);
+  // Récupérer la rue et la ville de la première photo par défaut
+  const firstDefaultPhoto = defaultPhotos[0];
+  const street = firstDefaultPhoto ? firstDefaultPhoto.rue || 'Rue non spécifiée' : 'Rue non spécifiée';
+  const city = firstDefaultPhoto ? firstDefaultPhoto.ville || 'Ville non spécifiée' : 'Ville non spécifiée';
 
   return (
     <View style={MapStyle.container}>
@@ -696,8 +740,9 @@ export default function MapScreen() {
         snapPoints={snapPoints}
         index={0}
         onChange={handleBottomSheetChange}
-        style={MapStyle.bottomSheet}
-        handleIndicatorStyle={MapStyle.handleIndicator} // Style pour l'indicateur du BottomSheet
+        backgroundStyle={MapStyle.bottomSheet}
+        handleStyle={MapStyle.handle}
+        handleIndicatorStyle={MapStyle.handleIndicator}
       >
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -767,82 +812,137 @@ export default function MapScreen() {
                 </View>
               </BottomSheetScrollView>
             ) : (
-              // Affichage de la barre de recherche et des résultats de recherche lorsque aucun marqueur n'est sélectionné
-              <View style={MapStyle.searchContainer}>
-                {/* Conteneur Parent pour aligner le champ de recherche et le logo */}
-                <View style={MapStyle.searchInputWrapper}>
-                  <View style={MapStyle.searchInputContainer}>
-                    <Ionicons name="search" size={20} color="#7f8c8d" style={MapStyle.searchIcon} />
-                    <TextInput
-                      style={MapStyle.searchInput}
-                      placeholder="Rechercher une armoire ou une installation..."
-                      placeholderTextColor="#7f8c8d"
-                      value={searchQuery}
-                      onChangeText={setSearchQuery}
-                      clearButtonMode="while-editing"
-                      onFocus={handleSearchFocus} // Ouvrir le BottomSheet au niveau maximal lors du focus
-                      onBlur={handleSearchBlur} // Réduire le BottomSheet si la recherche est vide
-                    />
-                  </View>
-                  {/* Ajout de l'image du logo à droite avec un contour noir */}
-                  <View style={MapStyle.logoContainer}>
-                    <Image source={LogoImage} style={MapStyle.logoImage} />
-                  </View>
-                </View>
-                {/* Affichage des résultats de recherche */}
-                {searchQuery.trim() !== '' && (
-                  filteredPhotos.length > 0 ? (
-                    <FlatList
-                      data={filteredPhotos}
-                      keyExtractor={(item) => item.id}
-                      renderItem={({ item }) => (
-                        <TouchableOpacity style={MapStyle.searchResultItem} onPress={() => handlePressDetails(item)}>
-                          <PublicImage 
-                            storagePath={item.imageUri}
-                            style={MapStyle.searchResultImage}
-                          />
-                          <View style={MapStyle.searchResultTextContainer}>
-                            <Text style={MapStyle.searchResultTitle}>{item.installationName || 'Nom non spécifié'}</Text>
-                            <Text style={MapStyle.searchResultSubtitle}>
-                              {item.numeroRue || 'Adresse non spécifiée'} {item.rue || 'Adresse non spécifiée'}, {item.ville || 'Adresse non spécifiée'}
-                            </Text>
-                          </View>
-                        </TouchableOpacity>
-                      )}
-                    />
-                  ) : (
-                    <Text style={MapStyle.noResultsText}>Aucun résultat trouvé.</Text>
-                  )
-                )}
-                {/* Affichage des résultats par défaut si aucun marqueur n'est sélectionné et aucune recherche effectuée */}
-                {/* Titre au-dessus des images */}
-                  <Text style={MapStyle.sectionTitre}>Dernières installations décoratives</Text>
-                  
-                  <View style={MapStyle.card}>      
-                {searchQuery.trim() === '' && (
-                <FlatList
-                  data={defaultPhotos} // Afficher les 4 dernières photos
+              // Affichage de la barre de recherche et des résultats
+              searchQuery.trim() !== '' ? (
+                <BottomSheetFlatList
+                  data={filteredPhotos}
                   keyExtractor={(item) => item.id}
-                  horizontal={true} // Activer le défilement horizontal
-                  showsHorizontalScrollIndicator={false} // Masquer la barre de défilement
-                  renderItem={({ item }) => (              
-                    <TouchableOpacity onPress={() => handlePressDetails(item)}>
-
+                  renderItem={({ item }) => (
+                    <TouchableOpacity style={MapStyle.searchResultItem} onPress={() => handlePressDetails(item)}>
                       <PublicImage 
                         storagePath={item.imageUri}
-                        style={MapStyle.horizontalImage} // Appliquer un style pour la taille des images
+                        style={MapStyle.searchResultImage}
                       />
-
+                      <View style={MapStyle.searchResultTextContainer}>
+                        <Text style={MapStyle.searchResultTitle}>{item.installationName || 'Nom non spécifié'}</Text>
+                        <Text style={MapStyle.searchResultSubtitle}>
+                          {item.numeroRue || 'Adresse non spécifiée'} {item.rue || 'Adresse non spécifiée'}, {item.ville || 'Ville non spécifiée'}
+                        </Text>
+                      </View>
                     </TouchableOpacity>
                   )}
+                  contentContainerStyle={MapStyle.searchContainer}
+                  ListHeaderComponent={
+                    <View style={MapStyle.searchInputWrapper}>
+                      <View style={MapStyle.searchInputContainer}>
+                        <Ionicons name="search" size={20} color="#7f8c8d" style={MapStyle.searchIcon} />
+                        <TextInput
+                          style={MapStyle.searchInput}
+                          placeholder="Rechercher une armoire ou une installation..."
+                          placeholderTextColor="#7f8c8d"
+                          value={searchQuery}
+                          onChangeText={setSearchQuery}
+                          clearButtonMode="while-editing"
+                          onFocus={handleSearchFocus}
+                          onBlur={handleSearchBlur}
+                        />
+                      </View>
+                      <View style={MapStyle.logoContainer}>
+                        <Image source={LogoImage} style={MapStyle.logoImage} />
+                      </View>
+                    </View>
+                  }
+                  ListEmptyComponent={<Text style={MapStyle.noResultsText}>Aucun résultat trouvé.</Text>}
                 />
-                )}
-                
-                </View>
-                
-              </View>
-              
-              
+              ) : (
+                <BottomSheetScrollView contentContainerStyle={MapStyle.searchContainer}>
+                  {/* Champ de recherche */}
+                  <View style={MapStyle.searchInputWrapper}>
+                    <View style={MapStyle.searchInputContainer}>
+                      <Ionicons name="search" size={20} color="#7f8c8d" style={MapStyle.searchIcon} />
+                      <TextInput
+                        style={MapStyle.searchInput}
+                        placeholder="Rechercher une armoire ou une installation..."
+                        placeholderTextColor="#7f8c8d"
+                        value={searchQuery}
+                        onChangeText={setSearchQuery}
+                        clearButtonMode="while-editing"
+                        onFocus={handleSearchFocus}
+                        onBlur={handleSearchBlur}
+                      />
+                    </View>
+                    <View style={MapStyle.logoContainer}>
+                      <Image source={LogoImage} style={MapStyle.logoImage} />
+                    </View>
+                  </View>
+                  {/* Titre "Récents" */}
+                  <View style={MapStyle.recentSection}>
+                    <Text style={MapStyle.sectionTitre}>Récents</Text>
+                    <View style={MapStyle.separator} />
+                  </View>
+                  {/* Slide horizontal des images */}
+                  <View style={MapStyle.card}>
+                    <Text style={MapStyle.cardTitle}>Dernière Installation</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                      {defaultPhotos.map((item) => (
+                        <TouchableOpacity key={item.id} onPress={() => handlePressDetails(item)}>
+                          <PublicImage 
+                            storagePath={item.imageUri}
+                            style={MapStyle.cardImage}
+                          />
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                    <Text style={MapStyle.cardStreet}>{`${street}, ${city}`}</Text>
+                  </View>
+                  {/* Répartition des Types d'Installations */}
+                  <View style={MapStyle.cardLarge}>
+                    <Text style={MapStyle.chartTitle}>Répartition des Types d'Installations</Text>
+                    <View style={MapStyle.pieChartContainer}>
+                      <Svg width={screenWidth - 60} height={220}>
+                        <G rotation="-90" origin={`${center}, ${center}`}>
+                          {pieChartData.map((item, index) => {
+                            const percentage = item.percentage / totalPercentage;
+                            const strokeDasharray = `${2 * Math.PI * radius * percentage} ${
+                              2 * Math.PI * radius
+                            }`;
+                            const strokeDashoffset = 2 * Math.PI * radius * startAngle;
+                            startAngle += percentage;
+
+                            return (
+                              <Circle
+                                key={index}
+                                cx={center}
+                                cy={center}
+                                r={radius}
+                                stroke={item.color}
+                                strokeWidth={strokeWidth}
+                                strokeDasharray={strokeDasharray}
+                                strokeDashoffset={-strokeDashoffset}
+                                fill="transparent"
+                              />
+                            );
+                          })}
+                        </G>
+                      </Svg>
+                      <View style={MapStyle.centerTextContainer}>
+                        <Text style={MapStyle.centerText}>{photos.length}</Text>
+                        <Text style={MapStyle.centerLabel}>Décors</Text>
+                      </View>
+                    </View>
+                    <View style={MapStyle.legendContainer}>
+                      {pieChartData.map((item, index) => (
+                        <View key={index} style={MapStyle.legendItem}>
+                          <View style={[MapStyle.legendColor, { backgroundColor: item.color }]} />
+                          <Text style={MapStyle.legendLabel}>
+                            {item.name}: {item.percentage}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                </BottomSheetScrollView>
+              )
             )}
           </TouchableWithoutFeedback>
         </KeyboardAvoidingView>

@@ -35,7 +35,8 @@ const DetailsStyle = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 15,
+    marginBottom: 8,
+    marginTop: 15,
     textAlign: 'center',
     color: '#34495e',
   },
@@ -60,6 +61,7 @@ const DetailsStyle = StyleSheet.create({
     fontWeight: '600',
   },
   metadata: {
+    margin: 2,
     fontSize: 16,
     color: '#34495e',
   },
@@ -73,6 +75,8 @@ const DetailsStyle = StyleSheet.create({
   },
   mapButton: {
     flexDirection: 'row',
+    left: '55%',
+    justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#3498db',
     paddingVertical: 5,

@@ -18,6 +18,11 @@ import { MaterialIcons } from '@expo/vector-icons';
 import PublicImage from '../components/PublicImage';
 import MaintenanceStyle from '../Styles/MaintenanceStyle';
 
+const formatInstallationName = (name) => {
+  // Utiliser une expression régulière pour supprimer le tiret et les chiffres à la fin
+  return name.replace(/-\d+$/, '');
+};
+
 export default function MaintenanceScreen() {
   const navigation = useNavigation();
 
@@ -152,7 +157,7 @@ export default function MaintenanceScreen() {
             style={MaintenanceStyle.photo}  // Style de l'image
           />
         <View style={MaintenanceStyle.textContainer}>
-          <Text style={MaintenanceStyle.title}>{item.installationName || 'Nom indisponible'}</Text>
+          <Text style={MaintenanceStyle.title}>{formatInstallationName(item.installationName || 'Nom indisponible')}</Text>
           <Text style={MaintenanceStyle.status}>{item.functionalityStatus || 'Statut non spécifié'}</Text>
           <Text style={MaintenanceStyle.date}>{formatDate(item.createdAt)}</Text>
         </View>
