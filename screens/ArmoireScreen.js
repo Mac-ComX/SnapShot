@@ -19,7 +19,7 @@ export default function ArmoireScreen() {
       const querySnapshot = await getDocs(q);
       const armoiresData = querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
       setArmoires(armoiresData);
-    } catch (error) {
+    } catch (error) {O
       Alert.alert('Erreur', 'Impossible de récupérer les armoires.');
     } finally {
       setLoading(false);

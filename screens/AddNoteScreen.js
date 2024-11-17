@@ -1,24 +1,23 @@
 // ./screens/AddNoteScreen.js
 
+import { MaterialIcons } from '@expo/vector-icons';
+import { addDoc, collection } from 'firebase/firestore';
 import React, { useRef, useState } from 'react';
-import { 
-  View, 
-  TextInput, 
-  Alert, 
-  StyleSheet, 
-  TouchableOpacity, 
-  Text, 
-  ActivityIndicator, 
-  TouchableWithoutFeedback, 
+import {
+  ActivityIndicator,
+  Alert,
   Keyboard,
-  ScrollView,
   KeyboardAvoidingView,
-  Platform
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  TouchableWithoutFeedback
 } from 'react-native';
 import { RichEditor, RichToolbar, actions } from 'react-native-pell-rich-editor';
-import { collection, addDoc } from 'firebase/firestore';
 import { db } from '../services/firebase';
-import { MaterialIcons } from '@expo/vector-icons';
 
 export default function AddNoteScreen({ navigation }) {
   const editor = useRef(); // Référence à l'éditeur de texte riche

@@ -1,19 +1,19 @@
-// src/navigation/DrawerNavigator.js
-
-import React from 'react';
 import { createDrawerNavigator } from '@react-navigation/drawer';
+import React from 'react';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Icone from 'react-native-vector-icons/MaterialIcons';
 
+// Import du composant CustomDrawerContent
 import CustomDrawerContent from '../../components/CustomDrawerContent';
 
-import DashboardStack from './DashboardStack';
-import CameraStack from './CameraStack';
-import MapScreenStack from './MapScreenStack';
-import GalerieStack from './GalerieStack';
+// Import des stacks pour chaque écran
 import ArmoireStack from './ArmoireStack';
-import MaintenanceStack from './MaintenanceStack';
+import CameraStack from './CameraStack';
+import DashboardStack from './DashboardStack';
+import GalerieStack from './GalerieStack';
 import JournalStack from './JournalStack';
+import MaintenanceStack from './MaintenanceStack';
+import MapScreenStack from './MapScreenStack';
 import NotesStack from './NotesStack';
 
 const Drawer = createDrawerNavigator();

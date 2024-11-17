@@ -1,38 +1,38 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import {
-  View,
-  Text,
-  ActivityIndicator,
-  TouchableOpacity,
-  Alert,
-  Dimensions,
-  Animated,
-  Modal,
-  Image,
-  Linking,
-  Platform,
-  Easing,
-  TextInput,
-  KeyboardAvoidingView,
-  TouchableWithoutFeedback,
-  Keyboard,
-  ScrollView,
-} from 'react-native';
-import MapView, { Marker, Callout, CalloutSubview } from 'react-native-maps'; // Import CalloutSubview
-import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import { collection, onSnapshot, doc, updateDoc } from 'firebase/firestore';
-import { db } from '../services/firebase';
-import { useNavigation, useRoute } from '@react-navigation/native';
-import BottomSheet, { BottomSheetScrollView, BottomSheetFlatList } from '@gorhom/bottom-sheet';
-import SvgCircle from '../components/svg/SvgCircle';
-import PublicImage from '../components/PublicImage';
-import MapStyle from '../Styles/MapStyle';
-import { Picker } from '@react-native-picker/picker';
-import Svg, { G, Circle } from 'react-native-svg';
-import { BlurView } from 'expo-blur';
+import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import AsyncStorage from '@react-native-async-storage/async-storage'; // Import AsyncStorage
+import { Picker } from '@react-native-picker/picker';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { BlurView } from 'expo-blur';
+import * as Location from 'expo-location';
+import { collection, doc, onSnapshot, updateDoc } from 'firebase/firestore';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Animated,
+  Dimensions,
+  Easing,
+  Image,
+  Keyboard,
+  KeyboardAvoidingView,
+  Linking,
+  Modal,
+  Platform,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
+} from 'react-native';
+import MapView, { Callout, CalloutSubview, Marker } from 'react-native-maps'; // Import CalloutSubview
+import Svg, { Circle, G } from 'react-native-svg';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import PublicImage from '../components/PublicImage';
+import SvgCircle from '../components/svg/SvgCircle';
+import { db } from '../services/firebase';
+import MapStyle from '../Styles/MapStyle';
 
 // Importez votre image de logo ici
 import LogoImage from '../assets/logoUser.jpg'; // Assurez-vous que le chemin est correct
