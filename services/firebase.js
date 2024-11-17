@@ -5,12 +5,12 @@ import { getStorage} from 'firebase/storage';
 
 // Configuration Firebase pour ton projet
 const firebaseConfig = {
-  apiKey: "AIzaSyAHl__r4c40TPW5infdn4vQ9HaYZS8OSR4",
-  authDomain: "testapp-3c5cc.firebaseapp.com",
-  projectId: "testapp-3c5cc",
-  storageBucket: "testapp-3c5cc.appspot.com",
-  messagingSenderId: "225262336385",
-  appId: "1:225262336385:web:042247959b559a15295080"
+  apiKey: "AIzaSyABI-GvNcR32yUAS4-BWlYka4BBv6rTRMw",
+  authDomain: "illuminations-vda.firebaseapp.com",
+  projectId: "illuminations-vda",
+  storageBucket: "illuminations-vda.appspot.com",
+  messagingSenderId: "574292872540",
+  appId: "1:574292872540:web:8cbbad8daa51c02b470599"
 };
 
 // Initialiser l'application Firebase

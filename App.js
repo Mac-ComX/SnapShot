@@ -1,7 +1,9 @@
+// App.js
+
 import 'react-native-get-random-values';
 import * as React from 'react';
 import 'react-native-gesture-handler';
-import { View, Image, StyleSheet, StatusBar, Text, Animated, Easing } from 'react-native';
+import { View, Image, StyleSheet, StatusBar, Text, Animated, Easing, TouchableOpacity } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createDrawerNavigator, DrawerContentScrollView, DrawerItemList } from '@react-navigation/drawer';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -27,7 +29,9 @@ import JournalScreen from './screens/JournalScreen'; // Ajout de l'écran Journa
 import Svg, { Circle, Text as SvgText } from 'react-native-svg';
 import ArmoireScreen from './screens/ArmoireScreen';
 import DetailsArmoireScreen from './screens/Details/DetailsArmoireScreen';
-
+import NotesListScreen from './screens/NotesListScreen';
+import AddNoteScreen from './screens/AddNoteScreen';  // Importation des écrans de notes
+import EditNoteScreen from './screens/EditNoteScreen'; // Importation de l'écran d'édition
 
 const Drawer = createDrawerNavigator();
 const Stack = createStackNavigator();
@@ -69,7 +73,7 @@ function CustomDrawerContent(props) {
               fill="#666"
               textAnchor="middle"
             >
-            C
+              C
             </SvgText>
           </Svg>
           <Text style={styles.footerText}>
@@ -78,6 +82,29 @@ function CustomDrawerContent(props) {
         </View>
       </DrawerContentScrollView>
     </Animated.View>
+  );
+}
+
+// Stack pour les notes
+function NotesStack() {
+  return (
+    <Stack.Navigator>
+      <Stack.Screen 
+        name="NotesList"
+        component={NotesListScreen} 
+        options={({ navigation }) => ({headerShown: false})}
+      />
+      <Stack.Screen 
+        name="AddNote"
+        component={AddNoteScreen} 
+        options={{ title: 'Ajouter une note' }} 
+      />
+      <Stack.Screen 
+        name="EditNote"
+        component={EditNoteScreen} 
+        options={{ title: '' ,headerBackTitle: 'Retour à la liste' }} 
+      />
+    </Stack.Navigator>
   );
 }
 
@@ -140,7 +167,11 @@ function GalerieStack() {
       <Stack.Screen 
         name="PhotosRueScreen" 
         component={PhotosRueScreen} 
-        options={({ route }) => ({ title: `Décoration ${route.params.rue}`, headerBackTitle: 'Retour',  headerShown: false})} 
+        options={({ route }) => ({ 
+          title: `Décoration ${route.params.rue}`, 
+          headerBackTitle: 'Retour',  
+          headerShown: false 
+        })} 
       />
       <Stack.Screen 
         name="DetailsScreen" 
@@ -151,7 +182,6 @@ function GalerieStack() {
   );
 }
 
-// Stack pour la carte avec gestion des paramètres pour centrer sur un marker
 // Stack pour la carte avec gestion des paramètres pour centrer sur un marker
 function MapScreenStack() {
   return (
@@ -217,7 +247,7 @@ function MaintenanceStack() {
   );
 }
 
-// Stack pour la Maintenance des décorations en panne
+// Stack pour les Armoires
 function ArmoireStack() {
   return (
     <Stack.Navigator>
@@ -335,6 +365,16 @@ export default function App() {
             ),
           }}
         />
+        <Drawer.Screen 
+          name="Notes" 
+          component={NotesStack}  // Ajout de la stack Notes
+          options={{ 
+            title: 'Mes Notes',
+            drawerIcon: ({ color, size }) => (
+              <Icon name="create" size={size} color={color} />
+            ),
+          }}
+        />
       </Drawer.Navigator>
     </NavigationContainer>
   );
@@ -357,7 +397,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'left',
-    left:8,
+    left: 8,
     marginBottom: 400,
     top: 200,
   },

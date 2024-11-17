@@ -23,15 +23,23 @@ const DetailsStyle = StyleSheet.create({
     shadowRadius: 15,
     elevation: 8,
   },
-  deleteBadge: {
+  selectionIcon: {
     position: 'absolute',
-    top: 10,        // Distance du haut de l'image
-    right: 10,      // Distance du côté droit
-    backgroundColor: 'rgba(255, 0, 0, 0.8)', // Fond rouge semi-transparent
-    borderRadius: 20,
-    padding: 8,
-    zIndex: 10,     // Assurer que le badge soit superposé sur l'image
+    height:50,
+    width:50,
+    top: 26,
+    left: 16,
+    zIndex: 2,
   },
+  // selectedOverlay: {
+  //   position: 'absolute',
+  //   top: 0,
+  //   left: 0,
+  //   right: 0,
+  //   bottom: 0,
+  //   backgroundColor: 'rgba(52, 152, 219, 0.4)', // Superposition semi-transparente bleue
+  //   zIndex: 1,
+  // },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
@@ -115,16 +123,25 @@ const DetailsStyle = StyleSheet.create({
     fontSize: 16,
   },
   footer: {
-        backgroundColor: '#f7f8fa',
-        padding: 20,
-        alignItems: 'center',
-        justifyContent: 'center',
-      },
+    backgroundColor: '#f7f8fa',
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   saveButton: {
     backgroundColor: '#e63946',
     padding: 15,
     borderRadius: 10,
     alignItems: 'center',
+    width: '100%',
+    marginBottom: 10,
+  },
+  deleteButton: {
+    backgroundColor: '#e74c3c',
+    padding: 15,
+    borderRadius: 30,
+    alignItems: 'center',
+    margin: 10,
     width: '100%',
   },
   additionalPhoto: {
@@ -202,8 +219,8 @@ const DetailsStyle = StyleSheet.create({
     color: '#fff',
   },
   saveIconInsideInput: {
-    height:42,
-    width:42,
+    height: 42,
+    width: 42,
     backgroundColor: '#1b484e',
     margin: 5,
     borderRadius: 30,
@@ -212,7 +229,7 @@ const DetailsStyle = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    backgroundColor: 'rgba(0,0,0,0.5)', // Fond semi-transparent
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -278,6 +295,7 @@ const DetailsStyle = StyleSheet.create({
   modalText: {
     fontSize: 16,
     color: '#34495e',
+    marginLeft: 10,
   },
   optionActive: {
     backgroundColor: '#e0f7fa',

@@ -1,4 +1,5 @@
 // screens/MapScreen.js
+
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'; 
 import { 
   View, 
@@ -32,6 +33,7 @@ import PublicImage from '../components/PublicImage';
 import MapStyle from '../Styles/MapStyle';
 import { Picker } from '@react-native-picker/picker';
 import Svg, { G, Circle } from 'react-native-svg';
+import { BlurView } from 'expo-blur';
 
 // Importez votre image de logo ici
 import LogoImage from '../assets/logoUser.jpg'; // Assurez-vous que le chemin est correct
@@ -207,7 +209,11 @@ export default function MapScreen() {
 
   // Nouvel État pour les statistiques du graphique
   const [photosByType, setPhotosByType] = useState({});
-  
+
+  // Nouvel État pour les raccourcis personnalisés
+  const [customShortcutModalVisible, setCustomShortcutModalVisible] = useState(false);
+  const [selectedCustomShortcut, setSelectedCustomShortcut] = useState(null);
+
   const sheetRef = useRef(null);
   const mapRef = useRef(null);
   const navigation = useNavigation();
@@ -226,6 +232,14 @@ export default function MapScreen() {
   const hasSetInitialRegionRef = useRef(false);
   const initialLocationRef = useRef(null);
   const isUserInteracting = useRef(false);
+
+  // Liste des raccourcis disponibles
+  const availableShortcuts = useMemo(() => [
+    { label: 'Ajouter une note', screen: 'AddNoteScreen' },
+    { label: 'Accéder aux armoires', screen: 'ArmoireScreen' },
+    { label: 'Voir le profil', screen: 'ProfileScreen' }, // Exemple d'autre option
+    // Ajoutez d'autres raccourcis si nécessaire
+  ], []);
 
   // Initialisation de la localisation et abonnement aux photos
   useEffect(() => {
@@ -273,17 +287,26 @@ export default function MapScreen() {
 
           if (initialLocationRef.current) {
             const distance = calculateDistance(initialLocationRef.current, newCoords);
+          
+            // Vérifiez la distance et si l'utilisateur n'interagit pas avec la carte
             if (distance > TOLERANCE_RADIUS && mapRef.current && !isUserInteracting.current) {
+              // Récupérer les paramètres actuels de la caméra, y compris l'orientation (heading)
+              const currentCamera = mapRef.current.getCamera();
+          
               const newRegion = {
                 latitude: newCoords.latitude,
                 longitude: newCoords.longitude,
                 latitudeDelta: mapRef.current.getCamera().latitudeDelta || 0.00922,
                 longitudeDelta: mapRef.current.getCamera().longitudeDelta || 0.00421,
+                heading: currentCamera.heading, // Maintenir l'orientation actuelle
               };
-              mapRef.current.animateCamera({ center: newRegion }, { duration: 1000, easing: Easing.ease });
+          
+              // Recentre la carte avec une animation douce sans changer l'orientation
+              mapRef.current.animateCamera({ center: newRegion, heading: currentCamera.heading }, { duration: 1000, easing: Easing.ease });
               initialLocationRef.current = newCoords;
             }
           }
+          
         }
       );
 
@@ -426,7 +449,7 @@ export default function MapScreen() {
     setMapType((prevType) => (prevType === 'standard' ? 'satellite' : 'standard'));
   }, []);
 
-  // Fonction pour gérer l'affichage du modal de filtre
+  // Fonction pour gérer l'affichage du modal
   const toggleFilterModal = () => {
     setModalVisible(!modalVisible);
   };
@@ -576,7 +599,7 @@ export default function MapScreen() {
     return photos
       .filter(photo => photo.createdAt) // Assurer que la photo a une date
       .sort((a, b) => parseDateTimeString(b.createdAt) - parseDateTimeString(a.createdAt)) // Trier par date décroissante
-      .slice(0, 4); // Ne garder que les 4 dernières
+      .slice(0, 6); // Ne garder que les 6 dernières
   };
   const defaultPhotos = getLastFourPhotos(photos);
 
@@ -658,10 +681,10 @@ export default function MapScreen() {
         zoomControlEnabled={true}
         showsCompass={true}
         onRegionChangeComplete={handleRegionChangeComplete}
-        onPanDrag={handleUserInteractionStart}
-        onTouchStart={handleUserInteractionStart}
-        onTouchEnd={handleUserInteractionEnd}
-        onMarkerPress={handleUserInteractionStart}
+        onPanDrag={handleUserInteractionStart} // Début de l'interaction
+        onTouchStart={handleUserInteractionStart} // Début de l'interaction
+        onTouchEnd={handleUserInteractionEnd} // Fin de l'interaction
+        onMarkerPress={handleUserInteractionStart} // Début de l'interaction sur un marqueur
         onPress={handleMapPress} // Gestion du clic sur la carte
       >
 
@@ -744,95 +767,122 @@ export default function MapScreen() {
         handleStyle={MapStyle.handle}
         handleIndicatorStyle={MapStyle.handleIndicator}
       >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={{ flex: 1 }}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
-        >
-          <TouchableWithoutFeedback onPress={Keyboard.dismiss} >
-            {selectedPhoto ? (
-              // Affichage des détails de l'installation lorsqu'un marqueur est sélectionné
-              <BottomSheetScrollView contentContainerStyle={MapStyle.modalContent}>
-                <Text style={MapStyle.modalTitle}>{selectedPhoto.installationName}</Text>
-                <PublicImage 
-                  storagePath={selectedPhoto.imageUri}
-                  style={MapStyle.modalImage}
-                />
+        
+        <BlurView intensity={30} tint="light" style={MapStyle.blurContainer}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={{ flex: 1 }}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+          >
+            <TouchableWithoutFeedback onPress={Keyboard.dismiss} >
+              {selectedPhoto ? (
+                // Affichage des détails de l'installation lorsqu'un marqueur est sélectionné
+                <BottomSheetScrollView contentContainerStyle={MapStyle.modalContent}>
+                  <Text style={MapStyle.modalTitle}>{selectedPhoto.installationName}</Text>
+                  <PublicImage 
+                    storagePath={selectedPhoto.imageUri}
+                    style={MapStyle.modalImage}
+                  />
+                  
+                  <View style={MapStyle.modalFullContent}>
+                    {/* Adresse */}
+                    <View style={MapStyle.row}>
+                      <Ionicons name="location-outline" size={22} color="#3498db" style={MapStyle.icon} />
+                      <Text style={MapStyle.modalLabel}>Adresse : </Text>
+                      <Text style={MapStyle.modalMetadata}>
+                        {selectedPhoto.numeroRue || 'Adresse non spécifiée'} {selectedPhoto.rue || 'Adresse non spécifiée'}, {selectedPhoto.ville || 'Ville non spécifiée'}
+                      </Text>
+                    </View>
                 
-                <View style={MapStyle.modalFullContent}>
-                  {/* Adresse */}
-                  <View style={MapStyle.row}>
-                    <Ionicons name="location-outline" size={22} color="#3498db" style={MapStyle.icon} />
-                    <Text style={MapStyle.modalLabel}>Adresse : </Text>
-                    <Text style={MapStyle.modalMetadata}>
-                      {selectedPhoto.numeroRue || 'Adresse non spécifiée'} {selectedPhoto.rue || 'Adresse non spécifiée'}, {selectedPhoto.ville || 'Adresse non spécifiée'}
-                    </Text>
-                  </View>
-              
-                  {/* Date */}
-                  <View style={MapStyle.row}>
-                    <Ionicons name="calendar-outline" size={22} color="#3498db" style={MapStyle.icon} />
-                    <Text style={MapStyle.modalLabel}>Date : </Text>
-                    <Text style={MapStyle.modalMetadata}>
-                      {selectedPhoto?.createdAt ? formatDate(parseDateTimeString(selectedPhoto.createdAt)) : 'Date non spécifiée'}
-                    </Text>
-                  </View>
-              
-                  {/* Type */}
-                  <View style={MapStyle.row}>
-                    <Ionicons name="build-outline" size={22} color="#3498db" style={MapStyle.icon} />
-                    <Text style={MapStyle.modalLabel}>Type : </Text>
-                    <Text style={MapStyle.modalMetadata}>{selectedPhoto.installationType || 'Non spécifié'}</Text>
-                  </View>
-              
-                  {/* Armoire */}
-                  <View style={MapStyle.row}>
-                    <Ionicons name="browsers-outline" size={22} color="#3498db" style={MapStyle.icon} />
-                    <Text style={MapStyle.modalLabel}>Armoire : </Text>
-                    <Text style={MapStyle.modalMetadata}>{selectedPhoto.armoire || 'Non spécifié'}</Text>
-                  </View>
-              
-                  {/* Commentaire */}
-                  <View style={MapStyle.row}>
-                    <Ionicons name="chatbox-ellipses-outline" size={22} color="#3498db" style={MapStyle.icon} />
-                    <Text style={MapStyle.modalLabel}>Info : </Text>
-                    <Text style={MapStyle.modalMetadata}>{selectedPhoto.comment || 'Aucun commentaire'}</Text>
-                  </View>
+                    {/* Date */}
+                    <View style={MapStyle.row}>
+                      <Ionicons name="calendar-outline" size={22} color="#3498db" style={MapStyle.icon} />
+                      <Text style={MapStyle.modalLabel}>Date : </Text>
+                      <Text style={MapStyle.modalMetadata}>
+                        {selectedPhoto?.createdAt ? formatDate(parseDateTimeString(selectedPhoto.createdAt)) : 'Date non spécifiée'}
+                      </Text>
+                    </View>
+                
+                    {/* Type */}
+                    <View style={MapStyle.row}>
+                      <Ionicons name="build-outline" size={22} color="#3498db" style={MapStyle.icon} />
+                      <Text style={MapStyle.modalLabel}>Type : </Text>
+                      <Text style={MapStyle.modalMetadata}>{selectedPhoto.installationType || 'Non spécifié'}</Text>
+                    </View>
+                
+                    {/* Armoire */}
+                    <View style={MapStyle.row}>
+                      <Ionicons name="browsers-outline" size={22} color="#3498db" style={MapStyle.icon} />
+                      <Text style={MapStyle.modalLabel}>Armoire : </Text>
+                      <Text style={MapStyle.modalMetadata}>{selectedPhoto.armoire || 'Non spécifié'}</Text>
+                    </View>
+                
+                    {/* Commentaire */}
+                    <View style={MapStyle.row}>
+                      <Ionicons name="chatbox-ellipses-outline" size={22} color="#3498db" style={MapStyle.icon} />
+                      <Text style={MapStyle.modalLabel}>Info : </Text>
+                      <Text style={MapStyle.modalMetadata}>{selectedPhoto.comment || 'Aucun commentaire'}</Text>
+                    </View>
 
-                  {/* Bouton pour naviguer vers DetailsScreen.js */}
-                  <TouchableOpacity 
-                    style={MapStyle.detailsButton} 
-                    onPress={() => {
-                      navigation.navigate('DetailsScreen', { photo: selectedPhoto });
-                    }}
-                  >
-                    <Ionicons name="information-circle-outline" size={24} color="#fff" style={MapStyle.detailsIcon} />
-                    <Text style={MapStyle.detailsButtonText}>Voir les détails</Text>
-                  </TouchableOpacity>
-                </View>
-              </BottomSheetScrollView>
-            ) : (
-              // Affichage de la barre de recherche et des résultats
-              searchQuery.trim() !== '' ? (
-                <BottomSheetFlatList
-                  data={filteredPhotos}
-                  keyExtractor={(item) => item.id}
-                  renderItem={({ item }) => (
-                    <TouchableOpacity style={MapStyle.searchResultItem} onPress={() => handlePressDetails(item)}>
-                      <PublicImage 
-                        storagePath={item.imageUri}
-                        style={MapStyle.searchResultImage}
-                      />
-                      <View style={MapStyle.searchResultTextContainer}>
-                        <Text style={MapStyle.searchResultTitle}>{item.installationName || 'Nom non spécifié'}</Text>
-                        <Text style={MapStyle.searchResultSubtitle}>
-                          {item.numeroRue || 'Adresse non spécifiée'} {item.rue || 'Adresse non spécifiée'}, {item.ville || 'Ville non spécifiée'}
-                        </Text>
-                      </View>
+                    {/* Bouton pour naviguer vers DetailsScreen.js */}
+                    <TouchableOpacity 
+                      style={MapStyle.detailsButton} 
+                      onPress={() => {
+                        navigation.navigate('DetailsScreen', { photo: selectedPhoto });
+                      }}
+                    >
+                      <Ionicons name="information-circle-outline" size={24} color="#fff" style={MapStyle.detailsIcon} />
+                      <Text style={MapStyle.detailsButtonText}>Voir les détails</Text>
                     </TouchableOpacity>
-                  )}
-                  contentContainerStyle={MapStyle.searchContainer}
-                  ListHeaderComponent={
+                  </View>
+                </BottomSheetScrollView>
+              ) : (
+                // Affichage de la barre de recherche et des résultats
+                searchQuery.trim() !== '' ? (
+                  <BottomSheetFlatList
+                    data={filteredPhotos}
+                    keyExtractor={(item) => item.id}
+                    renderItem={({ item }) => (
+                      <TouchableOpacity style={MapStyle.searchResultItem} onPress={() => handlePressDetails(item)}>
+                        <PublicImage 
+                          storagePath={item.imageUri}
+                          style={MapStyle.searchResultImage}
+                        />
+                        <View style={MapStyle.searchResultTextContainer}>
+                          <Text style={MapStyle.searchResultTitle}>{item.installationName || 'Nom non spécifié'}</Text>
+                          <Text style={MapStyle.searchResultSubtitle}>
+                            {item.numeroRue || 'Adresse non spécifiée'} {item.rue || 'Adresse non spécifiée'}, {item.ville || 'Ville non spécifiée'}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    )}
+                    contentContainerStyle={MapStyle.searchContainer}
+                    ListHeaderComponent={
+                      <View style={MapStyle.searchInputWrapper}>
+                        <View style={MapStyle.searchInputContainer}>
+                          <Ionicons name="search" size={20} color="#7f8c8d" style={MapStyle.searchIcon} />
+                          <TextInput
+                            style={MapStyle.searchInput}
+                            placeholder="Rechercher une armoire ou une installation..."
+                            placeholderTextColor="#7f8c8d"
+                            value={searchQuery}
+                            onChangeText={setSearchQuery}
+                            clearButtonMode="while-editing"
+                            onFocus={handleSearchFocus}
+                            onBlur={handleSearchBlur}
+                          />
+                        </View>
+                        <View style={MapStyle.logoContainer}>
+                          <Image source={LogoImage} style={MapStyle.logoImage} />
+                        </View>
+                      </View>
+                    }
+                    ListEmptyComponent={<Text style={MapStyle.noResultsText}>Aucun résultat trouvé.</Text>}
+                  />
+                ) : (
+                  <BottomSheetScrollView contentContainerStyle={MapStyle.searchContainer}>
+                    
+                    {/* Champ de recherche */}
                     <View style={MapStyle.searchInputWrapper}>
                       <View style={MapStyle.searchInputContainer}>
                         <Ionicons name="search" size={20} color="#7f8c8d" style={MapStyle.searchIcon} />
@@ -851,102 +901,143 @@ export default function MapScreen() {
                         <Image source={LogoImage} style={MapStyle.logoImage} />
                       </View>
                     </View>
-                  }
-                  ListEmptyComponent={<Text style={MapStyle.noResultsText}>Aucun résultat trouvé.</Text>}
-                />
-              ) : (
-                <BottomSheetScrollView contentContainerStyle={MapStyle.searchContainer}>
-                  {/* Champ de recherche */}
-                  <View style={MapStyle.searchInputWrapper}>
-                    <View style={MapStyle.searchInputContainer}>
-                      <Ionicons name="search" size={20} color="#7f8c8d" style={MapStyle.searchIcon} />
-                      <TextInput
-                        style={MapStyle.searchInput}
-                        placeholder="Rechercher une armoire ou une installation..."
-                        placeholderTextColor="#7f8c8d"
-                        value={searchQuery}
-                        onChangeText={setSearchQuery}
-                        clearButtonMode="while-editing"
-                        onFocus={handleSearchFocus}
-                        onBlur={handleSearchBlur}
-                      />
+                    {/* Titre "Récents" */}
+                    <View style={MapStyle.recentSection}>
+                      <Text style={MapStyle.sectionTitre}>Récents</Text>
                     </View>
-                    <View style={MapStyle.logoContainer}>
-                      <Image source={LogoImage} style={MapStyle.logoImage} />
+                    {/* Slide horizontal des images */}
+                    <View style={MapStyle.card}>
+                      <Text style={MapStyle.cardTitle}>Dernière Installation</Text>
+                      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                        {defaultPhotos.map((item) => (
+                          <TouchableOpacity key={item.id} onPress={() => handlePressDetails(item)}>
+                            <PublicImage 
+                              storagePath={item.imageUri}
+                              style={MapStyle.cardImage}
+                            />
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                      
+                      <View style={MapStyle.separator} />
+                      <Text style={MapStyle.cardStreet}>{`${street}, ${city}`}</Text>
                     </View>
-                  </View>
-                  {/* Titre "Récents" */}
-                  <View style={MapStyle.recentSection}>
-                    <Text style={MapStyle.sectionTitre}>Récents</Text>
-                    <View style={MapStyle.separator} />
-                  </View>
-                  {/* Slide horizontal des images */}
-                  <View style={MapStyle.card}>
-                    <Text style={MapStyle.cardTitle}>Dernière Installation</Text>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                      {defaultPhotos.map((item) => (
-                        <TouchableOpacity key={item.id} onPress={() => handlePressDetails(item)}>
-                          <PublicImage 
-                            storagePath={item.imageUri}
-                            style={MapStyle.cardImage}
-                          />
-                        </TouchableOpacity>
-                      ))}
-                    </ScrollView>
-                    <Text style={MapStyle.cardStreet}>{`${street}, ${city}`}</Text>
-                  </View>
-                  {/* Répartition des Types d'Installations */}
-                  <View style={MapStyle.cardLarge}>
-                    <Text style={MapStyle.chartTitle}>Répartition des Types d'Installations</Text>
-                    <View style={MapStyle.pieChartContainer}>
-                      <Svg width={screenWidth - 60} height={220}>
-                        <G rotation="-90" origin={`${center}, ${center}`}>
-                          {pieChartData.map((item, index) => {
-                            const percentage = item.percentage / totalPercentage;
-                            const strokeDasharray = `${2 * Math.PI * radius * percentage} ${
-                              2 * Math.PI * radius
-                            }`;
-                            const strokeDashoffset = 2 * Math.PI * radius * startAngle;
-                            startAngle += percentage;
 
-                            return (
-                              <Circle
-                                key={index}
-                                cx={center}
-                                cy={center}
-                                r={radius}
-                                stroke={item.color}
-                                strokeWidth={strokeWidth}
-                                strokeDasharray={strokeDasharray}
-                                strokeDashoffset={-strokeDashoffset}
-                                fill="transparent"
-                              />
-                            );
-                          })}
-                        </G>
-                      </Svg>
-                      <View style={MapStyle.centerTextContainer}>
-                        <Text style={MapStyle.centerText}>{photos.length}</Text>
-                        <Text style={MapStyle.centerLabel}>Décors</Text>
+                    {/* Section des raccourcis interactifs */}
+                    <View style={MapStyle.shortcutsContainer}>
+                      {/* Bouton Ajouter une note */}
+                      <TouchableOpacity style={MapStyle.shortcutButton} onPress={() => navigation.navigate('AddNoteScreen')}>
+                        <Ionicons name="add-circle-outline" size={30} color="#3498db" />
+                        <Text style={MapStyle.shortcutLabel}>note</Text>
+                      </TouchableOpacity>
+
+                      {/* Bouton Accéder aux armoires */}
+                      <TouchableOpacity style={MapStyle.shortcutButton} onPress={() => navigation.navigate('ArmoireScreen')}>
+                        <Ionicons name="cube-outline" size={30} color="#3498db" />
+                        <Text style={MapStyle.shortcutLabel}>armoires</Text>
+                      </TouchableOpacity>
+
+                      {/* Bouton Raccourci personnalisé */}
+                      <TouchableOpacity style={MapStyle.shortcutButton} onPress={() => setCustomShortcutModalVisible(true)}>
+                        <Ionicons name="options-outline" size={30} color="#3498db" />
+                        <Text style={MapStyle.shortcutLabel}>personnalisé</Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* Titre "Indicateur" */}
+                    <View style={MapStyle.recentSection}>
+                      <Text style={MapStyle.sectionTitre}>Indicateur</Text>
+                    </View>
+                    {/* Répartition des Types d'Installations */}
+                    <View style={MapStyle.cardLarge}>
+                      <Text style={MapStyle.chartTitle}>Répartition Types de décorations</Text>
+                      <View style={MapStyle.pieChartContainer}>
+                        <Svg width={screenWidth - 60} height={220}>
+                          <G rotation="-90" origin={`${center}, ${center}`}>
+                            {pieChartData.map((item, index) => {
+                              const percentage = item.percentage / totalPercentage;
+                              const strokeDasharray = `${2 * Math.PI * radius * percentage} ${
+                                2 * Math.PI * radius
+                              }`;
+                              const strokeDashoffset = 2 * Math.PI * radius * startAngle;
+                              startAngle += percentage;
+
+                              return (
+                                <Circle
+                                  key={index}
+                                  cx={center}
+                                  cy={center}
+                                  r={radius}
+                                  stroke={item.color}
+                                  strokeWidth={strokeWidth}
+                                  strokeDasharray={strokeDasharray}
+                                  strokeDashoffset={-strokeDashoffset}
+                                  fill="transparent"
+                                />
+                              );
+                            })}
+                          </G>
+                        </Svg>
+                        <View style={MapStyle.centerTextContainer}>
+                          <Text style={MapStyle.centerText}>{photos.length}</Text>
+                          <Text style={MapStyle.centerLabel}>Décors</Text>
+                        </View>
+                      </View>
+                      <View style={MapStyle.legendContainer}>
+                        {pieChartData.map((item, index) => (
+                          <View key={index} style={MapStyle.legendItem}>
+                            <View style={[MapStyle.legendColor, { backgroundColor: item.color }]} />
+                            <Text style={MapStyle.legendLabel}>
+                              {item.name}: {item.percentage}
+                            </Text>
+                          </View>
+                        ))}
                       </View>
                     </View>
-                    <View style={MapStyle.legendContainer}>
-                      {pieChartData.map((item, index) => (
-                        <View key={index} style={MapStyle.legendItem}>
-                          <View style={[MapStyle.legendColor, { backgroundColor: item.color }]} />
-                          <Text style={MapStyle.legendLabel}>
-                            {item.name}: {item.percentage}
-                          </Text>
-                        </View>
-                      ))}
-                    </View>
-                  </View>
-                </BottomSheetScrollView>
-              )
-            )}
-          </TouchableWithoutFeedback>
-        </KeyboardAvoidingView>
+                  </BottomSheetScrollView>
+                )
+              )}
+            </TouchableWithoutFeedback>
+          </KeyboardAvoidingView>
+        </BlurView>
       </BottomSheet>
+
+      {/* Modal pour le raccourci personnalisé */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={customShortcutModalVisible}
+        onRequestClose={() => setCustomShortcutModalVisible(false)}
+      >
+        <View style={MapStyle.modalContainer}>
+          <View style={MapStyle.modalContentFiltre}>
+            <Text style={MapStyle.modalTitleFiltre}>Choisir un raccourci</Text>
+            <Picker
+              selectedValue={selectedCustomShortcut}
+              onValueChange={(itemValue) => setSelectedCustomShortcut(itemValue)}
+            >
+              <Picker.Item label="Sélectionner..." value={null} />
+              {availableShortcuts.map((shortcut) => (
+                <Picker.Item key={shortcut.screen} label={shortcut.label} value={shortcut.screen} />
+              ))}
+            </Picker>
+            <TouchableOpacity
+              style={MapStyle.applyButton}
+              onPress={() => {
+                if (selectedCustomShortcut) {
+                  navigation.navigate(selectedCustomShortcut);
+                  setCustomShortcutModalVisible(false);
+                  setSelectedCustomShortcut(null);
+                } else {
+                  Alert.alert('Erreur', 'Veuillez sélectionner un raccourci.');
+                }
+              }}
+            >
+              <Text style={MapStyle.applyButtonText}>Valider</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       {/* Bouton flottant pour centrer la carte sur l'utilisateur */}
       <Animated.View

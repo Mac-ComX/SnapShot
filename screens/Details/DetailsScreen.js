@@ -127,6 +127,8 @@ export default function DetailsScreen({ route }) {
   const [selectedAdditionalPhoto, setSelectedAdditionalPhoto] = useState(null);
   const [capturedPhotoUri, setCapturedPhotoUri] = useState(null);
 
+  const [selectedPhotos, setSelectedPhotos] = useState([]); // Photos sélectionnées pour suppression
+
   // UI et Modaux
   const [modalVisible, setModalVisible] = useState(false);
   const [isAdditionalPhotoModalVisible, setIsAdditionalPhotoModalVisible] = useState(false);
@@ -197,6 +199,62 @@ export default function DetailsScreen({ route }) {
     setRefreshing(true);
     await fetchAdditionalPhotos();
     setRefreshing(false);
+  };
+
+  /**
+   * Gestion de la sélection des photos
+   */
+  const toggleSelection = (uri) => {
+    setSelectedPhotos(prevSelectedPhotos => {
+      if (prevSelectedPhotos.includes(uri)) {
+        // Retirer de la sélection
+        return prevSelectedPhotos.filter(item => item !== uri);
+      } else {
+        // Ajouter à la sélection
+        return [...prevSelectedPhotos, uri];
+      }
+    });
+  };
+
+  const deleteSelectedPhotos = async () => {
+    setIsDeleting(true);
+    try {
+      // Pour chaque photo sélectionnée, supprimer du stockage et mettre à jour Firestore
+      for (const uri of selectedPhotos) {
+        // S'assurer de ne pas supprimer la photo principale
+        if (uri === currentPhoto.imageUri) {
+          Alert.alert('Action non autorisée', 'Vous ne pouvez pas supprimer la photo principale.');
+          continue;
+        }
+
+        const storage = getStorage();
+        const imageRef = ref(storage, uri);
+
+        // Supprimer la photo du stockage Firebase
+        await deleteObject(imageRef);
+
+        // Supprimer l'URL de la photo de imageUris dans Firestore
+        await updateDoc(doc(db, 'decorations', currentPhoto.id), {
+          imageUris: arrayRemove(uri),
+        });
+      }
+
+      // Mettre à jour l'état local
+      setCurrentPhoto(prevPhoto => ({
+        ...prevPhoto,
+        imageUris: prevPhoto.imageUris.filter(uri => !selectedPhotos.includes(uri)),
+      }));
+
+      // Réinitialiser les photos sélectionnées
+      setSelectedPhotos([]);
+
+      Alert.alert('Succès', 'Photos supprimées avec succès');
+    } catch (error) {
+      Alert.alert('Erreur', `Impossible de supprimer les photos : ${error.message}`);
+      console.error('Erreur lors de la suppression des photos :', error);
+    }
+
+    setIsDeleting(false);
   };
 
   /**
@@ -717,15 +775,38 @@ export default function DetailsScreen({ route }) {
                 ? [currentPhoto.imageUri, ...currentPhoto.imageUris] 
                 : [currentPhoto.imageUri]
             } 
-            renderItem={({ item }) => (
-              <TouchableOpacity onPress={() => {
-                setSelectedImage(item);
-                setVisibleImage(item);
-                setIsMainImageFullScreen(true);
-              }}>
-                <PublicImage storagePath={item} style={[DetailsStyle.largePhoto, { width: Dimensions.get('window').width * 0.9 }]} />
-              </TouchableOpacity>
-            )}
+            renderItem={({ item }) => {
+              const isSelected = selectedPhotos.includes(item);
+              const isMainPhoto = item === currentPhoto.imageUri;
+              return (
+                <View>
+                  <TouchableOpacity onPress={() => {
+                    setSelectedImage(item);
+                    setVisibleImage(item);
+                    setIsMainImageFullScreen(true);
+                  }}>
+                    <PublicImage storagePath={item} style={[DetailsStyle.largePhoto, { width: Dimensions.get('window').width * 0.9 }]} />
+                  </TouchableOpacity>
+                  {/* Icône de sélection pour les photos supplémentaires */}
+                  {!isMainPhoto && (
+                    <TouchableOpacity 
+                      style={DetailsStyle.selectionIcon}
+                      onPress={() => toggleSelection(item)}
+                    >
+                      {isSelected ? (
+                        <MaterialIcons name="check-circle" size={24} color="#3498db" />
+                      ) : (
+                        <MaterialIcons name="radio-button-unchecked" size={24} color="#fff" />
+                      )}
+                    </TouchableOpacity>
+                  )}
+                  {/* Superposition pour indiquer la sélection */}
+                  {isSelected && (
+                    <View style={DetailsStyle.selectedOverlay} />
+                  )}
+                </View>
+              );
+            }}
             keyExtractor={(item, index) => index.toString()}
             horizontal={true}
             showsHorizontalScrollIndicator={false}
@@ -773,16 +854,18 @@ export default function DetailsScreen({ route }) {
                       {photoState.isUploading && <ActivityIndicator size="small" color="#000" style={{ marginLeft: 10 }} />}
                     </TouchableOpacity>
 
-                    {/* Option pour supprimer la photo sélectionnée */}
-                    <TouchableOpacity 
-                      style={DetailsStyle.modalOption} 
-                      onPress={deletePhoto} 
-                      disabled={isDeleting}
-                    >
-                      <MaterialIcons name="delete" size={24} color="red" />
-                      <Text style={DetailsStyle.modalText}>Supprimer la photo</Text>
-                      {isDeleting && <ActivityIndicator size="small" color="red" style={{ marginLeft: 10 }} />}
-                    </TouchableOpacity>
+                    {/* Option pour supprimer les photos sélectionnées */}
+                    {selectedPhotos.length > 0 && (
+                      <TouchableOpacity 
+                        style={DetailsStyle.modalOption} 
+                        onPress={deleteSelectedPhotos} 
+                        disabled={isDeleting}
+                      >
+                        <MaterialIcons name="delete" size={24} color="red" />
+                        <Text style={DetailsStyle.modalText}>Supprimer les photos sélectionnées</Text>
+                        {isDeleting && <ActivityIndicator size="small" color="red" style={{ marginLeft: 10 }} />}
+                      </TouchableOpacity>
+                    )}
 
                     {/* Bouton pour fermer le menu */}
                     <TouchableOpacity style={DetailsStyle.modalCloseButton} onPress={closeMenu}>
@@ -1038,6 +1121,20 @@ export default function DetailsScreen({ route }) {
 
         </View>
       </ScrollView>
+
+      {/* Bouton pour supprimer les photos sélectionnées */}
+      {selectedPhotos.length > 0 && (
+        <View style={DetailsStyle.footer}>
+          <TouchableOpacity 
+            style={DetailsStyle.deleteButton} 
+            onPress={deleteSelectedPhotos} 
+            disabled={isDeleting}
+          >
+            <Text style={DetailsStyle.buttonText}>Supprimer {selectedPhotos.length} photo(s)</Text>
+            {isDeleting && <ActivityIndicator size="small" color="#fff" style={{ marginLeft: 10 }} />}
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* Bouton de sauvegarde des modifications */}
       {isModified && (

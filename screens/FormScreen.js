@@ -1,15 +1,34 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, ScrollView, TextInput, Button, Alert, TouchableOpacity, Text, Modal, Dimensions, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
+import {
+  View,
+  ScrollView,
+  TextInput,
+  Alert,
+  TouchableOpacity,
+  Text,
+  Modal,
+  Dimensions,
+  KeyboardAvoidingView,
+  Platform,
+  Keyboard,
+} from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import * as Location from 'expo-location';
 import * as FileSystem from 'expo-file-system';
-import { collection, addDoc, query, where, getDocs } from 'firebase/firestore';
+import {
+  collection,
+  addDoc,
+  query,
+  where,
+  getDocs,
+  getCountFromServer,
+} from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../services/firebase';
 import FormStyle from '../Styles/FormStyle';
 
-const GOOGLE_API_KEY = 'AIzaSyAdPUePDEdtyX6tEH6c6JkQTrP6fsHPnoE'; // Replace with your Google API key
+const GOOGLE_API_KEY = 'AIzaSyAdPUePDEdtyX6tEH6c6JkQTrP6fsHPnoE'; // Remplacez par votre clé API Google
 
 const { height } = Dimensions.get('window');
 
@@ -23,7 +42,7 @@ export default function FormScreen() {
   const [installationType, setInstallationType] = useState('Motif Candélabre');
   const [installationStatus, setInstallationStatus] = useState('Installée');
   const [functionalityStatus, setFunctionalityStatus] = useState('Fonctionnelle');
-  const [comment, setComment] = useState('Numéro d\'affaire: 5418L ');
+  const [comment, setComment] = useState("Numéro d'affaire: 5418L ");
   const [address, setAddress] = useState('');
   const [latitude, setLatitude] = useState(null);
   const [longitude, setLongitude] = useState(null);
@@ -58,32 +77,24 @@ export default function FormScreen() {
     }
   }, [route.params]);
 
-  const extractProperName = (address) => {
-    const excludedWords = ['le', 'la', 'les', 'de', 'du', 'des', 'rue', 'avenue', 'boulevard', 'place', 'impasse', 'chemin', 'allée'];
-    return address
-      .split(' ')
-      .filter((word) => !excludedWords.includes(word.toLowerCase()))
-      .join('');
-  };
-
   const getInstallationTypeAbbreviation = (installationType) => {
     const typeMap = {
       'Motif Candélabre': 'MCD',
       'Motif Traversée': 'MTR',
       'Guirlande Traversée': 'GTR',
       'Guirlande Arbre': 'GAR',
-      'Structure': 'STC',
-      'Armoire': 'ARM',
+      Structure: 'STC',
+      Armoire: 'ARM',
     };
     return typeMap[installationType] || 'UNK';
   };
 
   const getVilleAbbreviation = (city) => {
     const cityMap = {
-      'roubaix': 'RBX',
-      'villeneuve-d\'ascq': 'VDA',
+      roubaix: 'RBX',
+      "villeneuve-d'ascq": 'VDA',
       'sainghin-en-weppes': 'SEW',
-      'don': 'DON',
+      don: 'DON',
     };
     const normalizedCity = city.toLowerCase();
     return cityMap[normalizedCity] || normalizedCity?.slice(0, 3).toUpperCase() || 'UNK';
@@ -91,98 +102,182 @@ export default function FormScreen() {
 
   const fetchAddressFromGoogle = async (lat, lon) => {
     try {
-      const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lon}&key=${GOOGLE_API_KEY}`);
+      const response = await fetch(
+        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lon}&key=${GOOGLE_API_KEY}`
+      );
       const data = await response.json();
 
       if (data.status === 'OK' && data.results.length > 0) {
         const addressComponents = data.results[0].address_components;
-        const streetNumber = addressComponents.find(component => component.types.includes('street_number'))?.long_name || 'Inconnu';
-        const street = addressComponents.find(component => component.types.includes('route'))?.long_name || 'Inconnu';
-        const city = addressComponents.find(component => component.types.includes('locality'))?.long_name || 'Inconnu';
-        const postalCode = addressComponents.find(component => component.types.includes('postal_code'))?.long_name || '';
-
-        setNumeroRue(streetNumber);
-        setRue(street);
-        setVille(city);
+        const streetNumber =
+          addressComponents.find((component) =>
+            component.types.includes('street_number')
+          )?.long_name || 'Inconnu';
+        const street =
+          addressComponents.find((component) => component.types.includes('route'))
+            ?.long_name || 'Inconnu';
+        const city =
+          addressComponents.find((component) => component.types.includes('locality'))
+            ?.long_name || 'Inconnu';
+        const postalCode =
+          addressComponents.find((component) =>
+            component.types.includes('postal_code')
+          )?.long_name || '';
 
         const completeAddress = `${streetNumber} ${street}, ${city} ${postalCode}`;
-        setAddress(completeAddress);
 
-        return completeAddress;
+        // Retourner les valeurs nécessaires
+        return {
+          completeAddress,
+          streetNumber,
+          street,
+          city,
+          postalCode,
+        };
       } else {
-        Alert.alert("Erreur", "Aucune adresse trouvée avec Google Maps API.");
-        return 'Adresse inconnue';
+        Alert.alert('Erreur', 'Aucune adresse trouvée avec Google Maps API.');
+        return null;
       }
     } catch (error) {
-      Alert.alert("Erreur", "Impossible de récupérer l'adresse depuis Google.");
-      return 'Adresse inconnue';
+      Alert.alert('Erreur', "Impossible de récupérer l'adresse depuis Google.");
+      return null;
     }
   };
 
   const normalizeAndSimplifyRue = (rue) => {
-    const excludedWords = ['rue', 'Avenue', 'avenue', 'boulevard', 'place', 'impasse', 'chemin', 'allée', 'le', 'la', 'les', 'de', 'du', 'des', 'l\''];
-    
+    const excludedWords = [
+      'rue',
+      'avenue',
+      'boulevard',
+      'place',
+      'impasse',
+      'chemin',
+      'allée',
+      'le',
+      'la',
+      'les',
+      'de',
+      'du',
+      'des',
+      "l'",
+    ];
     return rue
       .normalize('NFD')
-      .replace(/[̀-ͯ]/g, '')
+      .replace(/[\u0300-\u036f]/g, '')
       .toLowerCase()
       .split(' ')
-      .filter(word => !excludedWords.includes(word))
+      .filter((word) => !excludedWords.includes(word))
       .join('');
   };
 
   const generateLocationAndName = async () => {
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
+      // Vérifier si les permissions sont déjà accordées
+      let { status } = await Location.getForegroundPermissionsAsync();
       if (status !== 'granted') {
-        setErrorMsg('Permission refusée pour accéder à la localisation.');
-        Alert.alert('Erreur', errorMsg);
-        return;
+        const { status: newStatus } = await Location.requestForegroundPermissionsAsync();
+        if (newStatus !== 'granted') {
+          setErrorMsg('Permission refusée pour accéder à la localisation.');
+          Alert.alert('Erreur', 'Permission refusée pour accéder à la localisation.');
+          return;
+        }
+        status = newStatus;
       }
 
+      // Obtenir la position actuelle
       const { coords } = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.Highest,
       });
 
+      // Mettre à jour la latitude et la longitude
       setLatitude(coords.latitude);
       setLongitude(coords.longitude);
 
+      let currentRue = rue;
+      let currentVille = ville;
+
       if (!address || address === 'Adresse inconnue') {
-        const completeAddress = await fetchAddressFromGoogle(coords.latitude, coords.longitude);
-        setAddress(completeAddress);
+        const addressData = await fetchAddressFromGoogle(coords.latitude, coords.longitude);
+        if (addressData) {
+          const { completeAddress, streetNumber, street, city, postalCode } = addressData;
+          setAddress(completeAddress);
+          setNumeroRue(streetNumber);
+          setRue(street);
+          setVille(city);
+
+          // Utiliser ces variables directement
+          currentRue = street;
+          currentVille = city;
+        } else {
+          Alert.alert('Erreur', "Impossible de récupérer l'adresse.");
+          return;
+        }
+      } else {
+        currentRue = rue;
+        currentVille = ville;
       }
 
-      const properRueName = normalizeAndSimplifyRue(rue);
+      // Vérifier que la rue et la ville sont disponibles
+      if (
+        !currentRue ||
+        !currentVille ||
+        currentRue === 'Inconnu' ||
+        currentVille === 'Inconnu'
+      ) {
+        Alert.alert('Erreur', 'La rue ou la ville est inconnue.');
+        return;
+      }
+
+      // Générer le nom de l'installation
+      const properRueName = normalizeAndSimplifyRue(currentRue);
       const installationTypeAbbreviation = getInstallationTypeAbbreviation(installationType);
-      const villeAbbreviation = getVilleAbbreviation(ville);
+      const villeAbbreviation = getVilleAbbreviation(currentVille);
+
+      // Formatage de la date
       const date = new Date();
-      const formattedDate = `${String(date.getDate()).padStart(2, '0')}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getFullYear()).slice(-2)}`;
+      const formattedDate = `${String(date.getDate()).padStart(2, '0')}${String(
+        date.getMonth() + 1
+      ).padStart(2, '0')}${String(date.getFullYear()).slice(-2)}`;
 
+      // Utiliser une requête d'agrégation pour obtenir le compte
       const installationsRef = collection(db, 'decorations');
-      const q = query(installationsRef,
+      const q = query(
+        installationsRef,
         where('installationType', '==', installationType),
-        where('rue', '==', rue));
+        where('rue', '==', currentRue)
+      );
 
-      const querySnapshot = await getDocs(q);
-      const numberOfInstallations = querySnapshot.size + 1;
+      const snapshot = await getCountFromServer(q);
+      const numberOfInstallations = snapshot.data().count + 1;
 
-      const name = `${installationTypeAbbreviation}-${String(numberOfInstallations).padStart(2, '0')}-${properRueName}${villeAbbreviation}-${formattedDate}`;
+      // Générer le nom final
+      const name = `${installationTypeAbbreviation}-${String(numberOfInstallations).padStart(
+        2,
+        '0'
+      )}-${properRueName}${villeAbbreviation}-${formattedDate}`;
       setInstallationName(name);
-
     } catch (error) {
-      Alert.alert('Erreur', 'Echec lors de la récupération de la localisation ou de la génération du nom.');
+      Alert.alert(
+        'Erreur',
+        'Échec lors de la récupération de la localisation ou de la génération du nom.'
+      );
+      console.error(error);
     }
   };
 
-  useEffect(() => {
-    if (latitude && longitude && rue.trim() && ville.trim()) {
-      generateLocationAndName();
-    }
-  }, [latitude, longitude, rue, ville]);
-
   const savePhoto = async () => {
     try {
-      if (!localImageUri || !installationName || !address || !latitude || !longitude || !rue || !ville || !numeroRue || !armoire) {
+      if (
+        !localImageUri ||
+        !installationName ||
+        !address ||
+        !latitude ||
+        !longitude ||
+        !rue ||
+        !ville ||
+        !numeroRue ||
+        !armoire
+      ) {
         Alert.alert('Erreur', 'Veuillez remplir tous les champs nécessaires.');
         return;
       }
@@ -201,7 +296,7 @@ export default function FormScreen() {
 
       const installationID = `${installationName}-${latitude}-${longitude}`;
 
-      // Check if the installationID already exists
+      // Vérifier si l'installation existe déjà
       const installationsRef = collection(db, 'decorations');
       const q = query(installationsRef, where('installationID', '==', installationID));
       const querySnapshot = await getDocs(q);
@@ -245,19 +340,31 @@ export default function FormScreen() {
   };
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-      <ScrollView ref={scrollViewRef} contentContainerStyle={[FormStyle.formContainer, { minHeight: height }]}>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={{ flex: 1 }}
+    >
+      <ScrollView
+        ref={scrollViewRef}
+        contentContainerStyle={[FormStyle.formContainer, { minHeight: height }]}
+      >
         <Text style={FormStyle.title}>Informations Techniques</Text>
 
-        <TextInput style={FormStyle.input} placeholder="Nom de l'installation" value={installationName} editable={false} placeholderTextColor="#888" />
+        <TextInput
+          style={FormStyle.input}
+          placeholder="Nom de l'installation"
+          value={installationName}
+          editable={false}
+          placeholderTextColor="#888"
+        />
 
-        <TextInput 
-          style={FormStyle.input} 
-          placeholder="Adresse complète" 
-          value={address} 
-          editable={true} 
+        <TextInput
+          style={FormStyle.input}
+          placeholder="Adresse complète"
+          value={address}
+          editable={true}
           onChangeText={setAddress}
-          placeholderTextColor="#888" 
+          placeholderTextColor="#888"
         />
 
         <TouchableOpacity style={FormStyle.button} onPress={generateLocationAndName}>
@@ -265,11 +372,20 @@ export default function FormScreen() {
         </TouchableOpacity>
 
         <Text style={FormStyle.pickerTitle}>Type de décorations</Text>
-        <TouchableOpacity onPress={() => setShowTypePicker(!showTypePicker)} style={FormStyle.pickerButton}>
+        <TouchableOpacity
+          onPress={() => setShowTypePicker(!showTypePicker)}
+          style={FormStyle.pickerButton}
+        >
           <Text>{installationType}</Text>
         </TouchableOpacity>
         {showTypePicker && (
-          <Picker selectedValue={installationType} onValueChange={(itemValue) => { setInstallationType(itemValue); setShowTypePicker(false); }}>
+          <Picker
+            selectedValue={installationType}
+            onValueChange={(itemValue) => {
+              setInstallationType(itemValue);
+              setShowTypePicker(false);
+            }}
+          >
             <Picker.Item label="Motif Candélabre" value="Motif Candélabre" />
             <Picker.Item label="Motif Traversée" value="Motif Traversée" />
             <Picker.Item label="Guirlande Traversée" value="Guirlande Traversée" />
@@ -280,41 +396,85 @@ export default function FormScreen() {
         )}
 
         <Text style={FormStyle.pickerTitle}>Statut d'installation</Text>
-        <TouchableOpacity onPress={() => setShowStatusPicker(!showStatusPicker)} style={FormStyle.pickerButton}>
+        <TouchableOpacity
+          onPress={() => setShowStatusPicker(!showStatusPicker)}
+          style={FormStyle.pickerButton}
+        >
           <Text>{installationStatus}</Text>
         </TouchableOpacity>
         {showStatusPicker && (
-          <Picker selectedValue={installationStatus} onValueChange={(itemValue) => { setInstallationStatus(itemValue); setShowStatusPicker(false); }}>
+          <Picker
+            selectedValue={installationStatus}
+            onValueChange={(itemValue) => {
+              setInstallationStatus(itemValue);
+              setShowStatusPicker(false);
+            }}
+          >
             <Picker.Item label="Installée" value="Installée" />
             <Picker.Item label="Non installée" value="Non installée" />
           </Picker>
         )}
 
         <Text style={FormStyle.pickerTitle}>État de fonctionnement</Text>
-        <TouchableOpacity onPress={() => setShowFunctionalityPicker(!showFunctionalityPicker)} style={FormStyle.pickerButton}>
+        <TouchableOpacity
+          onPress={() => setShowFunctionalityPicker(!showFunctionalityPicker)}
+          style={FormStyle.pickerButton}
+        >
           <Text>{functionalityStatus}</Text>
         </TouchableOpacity>
         {showFunctionalityPicker && (
-          <Picker selectedValue={functionalityStatus} onValueChange={(itemValue) => { setFunctionalityStatus(itemValue); setShowFunctionalityPicker(false); }}>
+          <Picker
+            selectedValue={functionalityStatus}
+            onValueChange={(itemValue) => {
+              setFunctionalityStatus(itemValue);
+              setShowFunctionalityPicker(false);
+            }}
+          >
             <Picker.Item label="Fonctionnelle" value="Fonctionnelle" />
             <Picker.Item label="En panne" value="En panne" />
           </Picker>
         )}
 
         <Text style={FormStyle.pickerTitle}>Armoire</Text>
-        <TextInput style={FormStyle.input} placeholder="Numéro de l'armoire" value={armoire} onChangeText={setArmoire} placeholderTextColor="#888" />
+        <TextInput
+          style={FormStyle.input}
+          placeholder="Numéro de l'armoire"
+          value={armoire}
+          onChangeText={setArmoire}
+          placeholderTextColor="#888"
+        />
 
-        <TextInput style={[FormStyle.input, { height: 90 }]} placeholder="Ajouter un commentaire" placeholderTextColor="#888" value={comment} onChangeText={setComment} multiline />
+        <TextInput
+          style={[FormStyle.input, { height: 90 }]}
+          placeholder="Ajouter un commentaire"
+          placeholderTextColor="#888"
+          value={comment}
+          onChangeText={setComment}
+          multiline
+        />
 
-        <TouchableOpacity style={[FormStyle.button, FormStyle.saveButton]} onPress={savePhoto}>
+        <TouchableOpacity
+          style={[FormStyle.button, FormStyle.saveButton]}
+          onPress={savePhoto}
+        >
           <Text style={FormStyle.buttonText}>Enregistrer</Text>
         </TouchableOpacity>
 
-        <Modal transparent={true} visible={showNumeroRueModal} onRequestClose={() => setShowNumeroRueModal(false)}>
+        <Modal
+          transparent={true}
+          visible={showNumeroRueModal}
+          onRequestClose={() => setShowNumeroRueModal(false)}
+        >
           <View style={FormStyle.modalContainer}>
             <View style={FormStyle.modalContent}>
               <Text style={FormStyle.modalTitle}>Entrez le numéro de rue</Text>
-              <TextInput style={FormStyle.input} placeholder="Numéro de rue" value={numeroRue} onChangeText={setNumeroRue} keyboardType="numeric" />
+              <TextInput
+                style={FormStyle.input}
+                placeholder="Numéro de rue"
+                value={numeroRue}
+                onChangeText={setNumeroRue}
+                keyboardType="numeric"
+              />
               <TouchableOpacity style={FormStyle.modalButton} onPress={handleNumeroRueUpdate}>
                 <Text style={FormStyle.buttonText}>Valider</Text>
               </TouchableOpacity>

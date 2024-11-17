@@ -1,4 +1,5 @@
 // Styles/MapStyle.js
+
 import { StyleSheet, Platform } from 'react-native';
 
 const MapStyle = StyleSheet.create({
@@ -59,7 +60,7 @@ const MapStyle = StyleSheet.create({
   modalContent: {
     padding: 20,
     flexGrow: 1,
-    backgroundColor: 'rgba(238, 238, 238, 0.9)', // Semi-transparent
+    backgroundColor: 'rgba(238, 238, 238, 0.9)', // Gris clair semi-transparent
     borderRadius: 10, // Réduction du rayon des coins
     margin: 0,
     zIndex: 1,
@@ -138,7 +139,7 @@ const MapStyle = StyleSheet.create({
     position: 'absolute',
     top: 102,
     right: 7,
-    backgroundColor: 'rgb(102, 176, 141)', // Vert-bleu opaque
+    backgroundColor: 'rgb(102, 176, 141)', // Gris clair
     borderRadius: 10,
     width: 40,
     height: 40,
@@ -154,7 +155,7 @@ const MapStyle = StyleSheet.create({
     position: 'absolute',
     top: 150,
     right: 7,
-    backgroundColor: 'rgb(102, 176, 141)', // Vert-bleu opaque
+    backgroundColor: 'rgb(102, 176, 141)', // Gris clair
     borderRadius: 10,
     width: 40,
     height: 40,
@@ -171,7 +172,7 @@ const MapStyle = StyleSheet.create({
     top: 55,
     left: 7,
     zIndex: 100,
-    backgroundColor: 'rgb(102, 176, 141)', // Vert-bleu opaque
+    backgroundColor: 'rgb(102, 176, 141)', // Gris clair
     borderRadius: 10,
     width: 40,
     height: 40,
@@ -201,13 +202,10 @@ const MapStyle = StyleSheet.create({
     fontWeight: 'bold',
   },
   bottomSheet: {
-    backgroundColor: 'transparent', // Transparent pour laisser place au BlurView
-    // borderTopLeftRadius: 15, // Rayon des coins
-    // borderTopRightRadius: 15, // Rayon des coins
-    elevation: 20,
+    backgroundColor: '#EEEEEE', // Gris clair
   },
   handle: {
-    backgroundColor: 'rgba(238, 238, 238, 0.95)', // Gris clair translucide
+    backgroundColor: '#EEEEEE', // Gris clair
     borderTopLeftRadius: 15, // Rayon des coins
     borderTopRightRadius: 15, // Rayon des coins
     elevation: 20,
@@ -282,12 +280,11 @@ const MapStyle = StyleSheet.create({
   
   // Styles pour la Barre de Recherche et les Résultats
   searchContainer: {
+    width: '100%',
     flexGrow: 1,
-    paddingTop: 1,
+    paddingTop: 0,
     padding: 20,
-    backgroundColor: 'rgba(238,238,238, 0.9)', // Semi-transparent
-    // borderTopLeftRadius: 10, // Réduction du rayon des coins
-    // borderTopRightRadius: 10, // Réduction du rayon des coins
+    backgroundColor: '#EEEEEE', // Gris clair
   },
   searchInputWrapper: {
     flexDirection: 'row',
@@ -367,21 +364,21 @@ const MapStyle = StyleSheet.create({
   },
   sectionTitre: {
     marginTop: 20,
-    fontSize: 18, // Augmentation de la taille pour un effet moderne
-    fontWeight: '600', // Font-weight plus lourd pour un look moderne
+    fontSize: 14, // Augmentation de la taille pour un effet moderne
+    fontWeight: '700', // Font-weight plus lourd pour un look moderne
     marginBottom: 10, // Plus d'espace en bas pour respirer
-    color: '#333333', // Une couleur gris foncé plus douce, mais toujours visible
+    color: '#ababab', // Une couleur gris foncé plus douce, mais toujours visible
     letterSpacing: 0.5, // Espacement léger entre les lettres pour un style moderne
     textAlign: 'left', // Aligner le texte à gauche pour un look plus symétrique
     fontFamily: Platform.OS === 'ios' ? 'Helvetica Neue' : 'Roboto', // Police moderne
   },
   recentSection: {
-    marginTop: 20,
+    marginTop: 0,
   },
   separator: {
     height: 2,
-    width: '40%', // Ne pas couvrir toute la largeur
-    backgroundColor: '#ccc',
+    width: '80%', // Ne pas couvrir toute la largeur
+    backgroundColor: '#aaa',
     alignSelf: 'center',
     borderRadius: 1,
     marginVertical: 10,
@@ -401,7 +398,7 @@ const MapStyle = StyleSheet.create({
   cardTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#333',
+    color: '#808080',
     marginBottom: 10,
   },
   cardImagesContainer: {
@@ -409,19 +406,21 @@ const MapStyle = StyleSheet.create({
     marginBottom: 10,
   },
   cardImage: {
-    width: 100,
-    height: 100,
+    width: 150,
+    height: 150,
     borderRadius: 10,
-    marginRight: 10,
+    marginRight: 2,
+    marginBottom: 10,
   },
   cardStreet: {
+    margin:10,
     fontSize: 16,
     color: '#7f8c8d',
   },
 
   // Styles pour le graphique
   cardLarge: {
-    backgroundColor: '#fff',
+    backgroundColor: '#fff', // Blanc opaque
     borderRadius: 12,
     padding: 20,
     marginBottom: 20,
@@ -433,9 +432,8 @@ const MapStyle = StyleSheet.create({
   chartTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#333',
+    color: '#808080',
     marginBottom: 10,
-    textAlign: 'center',
   },
   pieChartContainer: {
     left: 50,
@@ -478,6 +476,24 @@ const MapStyle = StyleSheet.create({
   legendLabel: {
     fontSize: 14,
     color: '#555',
+  },
+  blurContainer: {
+    flex: 1, // Remplacer position: 'absolute' par flex: 1
+  },
+
+  // Styles pour les raccourcis interactifs
+  shortcutsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginVertical: 20,
+  },
+  shortcutButton: {
+    alignItems: 'center',
+  },
+  shortcutLabel: {
+    marginTop: 5,
+    fontSize: 14,
+    color: '#34495e',
   },
 });
 
