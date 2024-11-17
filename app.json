@@ -3,7 +3,7 @@
     "sdkVersion": "52.0.0",
     "name": "SnapSpot",
     "slug": "snapspot",
-    "version": "1.5.4",
+    "version": "1.5.6",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "splash": {

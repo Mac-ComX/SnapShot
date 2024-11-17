@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   ScrollView,
@@ -6,11 +6,9 @@ import {
   Alert,
   TouchableOpacity,
   Text,
-  Modal,
   Dimensions,
   KeyboardAvoidingView,
   Platform,
-  Keyboard,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -28,15 +26,82 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../services/firebase';
 import FormStyle from '../Styles/FormStyle';
 
-const GOOGLE_API_KEY = 'AIzaSyAdPUePDEdtyX6tEH6c6JkQTrP6fsHPnoE'; // Remplacez par votre clé API Google
+// Remplacez par votre clé API Google (évitez de la stocker en dur dans le code)
+const GOOGLE_API_KEY = 'AIzaSyBqHcPlN_5SDdo87KqeobzV5NnGavFvjs8';
 
+// Obtenir la hauteur de l'écran
 const { height } = Dimensions.get('window');
+
+// Fonctions utilitaires en dehors du composant principal
+/**
+ * Obtenir l'abréviation du type d'installation
+ * @param {string} installationType
+ * @returns {string}
+ */
+const getInstallationTypeAbbreviation = (installationType) => {
+  const typeMap = {
+    'Motif Candélabre': 'MCD',
+    'Motif Traversée': 'MTR',
+    'Guirlande Traversée': 'GTR',
+    'Guirlande Arbre': 'GAR',
+    Structure: 'STC',
+    Armoire: 'ARM',
+  };
+  return typeMap[installationType] || 'UNK';
+};
+
+/**
+ * Obtenir l'abréviation de la ville
+ * @param {string} city
+ * @returns {string}
+ */
+const getVilleAbbreviation = (city) => {
+  const cityMap = {
+    roubaix: 'RBX',
+    "villeneuve-d'ascq": 'VDA',
+    'sainghin-en-weppes': 'SEW',
+    don: 'DON',
+  };
+  const normalizedCity = city.toLowerCase();
+  return cityMap[normalizedCity] || normalizedCity?.slice(0, 3).toUpperCase() || 'UNK';
+};
+
+/**
+ * Normaliser et simplifier le nom de la rue
+ * @param {string} rue
+ * @returns {string}
+ */
+const normalizeAndSimplifyRue = (rue) => {
+  const excludedWords = [
+    'rue',
+    'avenue',
+    'boulevard',
+    'place',
+    'impasse',
+    'chemin',
+    'allée',
+    'le',
+    'la',
+    'les',
+    'de',
+    'du',
+    'des',
+    "l'",
+  ];
+  return rue
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .split(' ')
+    .filter((word) => !excludedWords.includes(word))
+    .join('');
+};
 
 export default function FormScreen() {
   const route = useRoute();
   const navigation = useNavigation();
-  const scrollViewRef = useRef();
 
+  // États du composant
   const [localImageUri, setLocalImageUri] = useState(null);
   const [installationName, setInstallationName] = useState('');
   const [installationType, setInstallationType] = useState('Motif Candélabre');
@@ -51,55 +116,64 @@ export default function FormScreen() {
   const [numeroRue, setNumeroRue] = useState('');
   const [armoire, setArmoire] = useState('');
   const [errorMsg, setErrorMsg] = useState(null);
-  const [showNumeroRueModal, setShowNumeroRueModal] = useState(false);
   const [showTypePicker, setShowTypePicker] = useState(false);
   const [showStatusPicker, setShowStatusPicker] = useState(false);
   const [showFunctionalityPicker, setShowFunctionalityPicker] = useState(false);
+  const [knownArmoires, setKnownArmoires] = useState([]);
+  const [filteredArmoires, setFilteredArmoires] = useState([]);
 
-  useEffect(() => {
-    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', (e) => {
-      scrollViewRef.current?.scrollTo({ y: e.endCoordinates.height, animated: true });
-    });
-
-    const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
-      scrollViewRef.current?.scrollTo({ y: 0, animated: true });
-    });
-
-    return () => {
-      keyboardDidHideListener.remove();
-      keyboardDidShowListener.remove();
-    };
-  }, []);
-
+  // Récupérer l'URI de l'image depuis les paramètres de la route
   useEffect(() => {
     if (route.params?.imageUri) {
       setLocalImageUri(route.params.imageUri);
     }
   }, [route.params]);
 
-  const getInstallationTypeAbbreviation = (installationType) => {
-    const typeMap = {
-      'Motif Candélabre': 'MCD',
-      'Motif Traversée': 'MTR',
-      'Guirlande Traversée': 'GTR',
-      'Guirlande Arbre': 'GAR',
-      Structure: 'STC',
-      Armoire: 'ARM',
+  // Récupérer les armoires connues depuis Firestore
+  useEffect(() => {
+    const fetchKnownArmoires = async () => {
+      try {
+        const armoiresCollection = collection(db, 'decorations');
+        const armoiresSnapshot = await getDocs(armoiresCollection);
+
+        if (!armoiresSnapshot.empty) {
+          const armoiresSet = new Set(
+            armoiresSnapshot.docs.map((doc) => doc.data().armoire)
+          );
+          const armoiresList = Array.from(armoiresSet);
+          setKnownArmoires(armoiresList);
+        }
+      } catch (error) {
+        console.error('Erreur lors de la récupération des armoires:', error);
+      }
     };
-    return typeMap[installationType] || 'UNK';
+
+    fetchKnownArmoires();
+  }, []);
+
+  /**
+   * Gérer les changements dans le champ "Armoire"
+   * @param {string} text
+   */
+  const handleArmoireChange = (text) => {
+    setArmoire(text);
+
+    if (text.length > 0) {
+      const suggestions = knownArmoires.filter((armoireItem) =>
+        armoireItem.toLowerCase().startsWith(text.toLowerCase())
+      );
+      setFilteredArmoires(suggestions);
+    } else {
+      setFilteredArmoires([]);
+    }
   };
 
-  const getVilleAbbreviation = (city) => {
-    const cityMap = {
-      roubaix: 'RBX',
-      "villeneuve-d'ascq": 'VDA',
-      'sainghin-en-weppes': 'SEW',
-      don: 'DON',
-    };
-    const normalizedCity = city.toLowerCase();
-    return cityMap[normalizedCity] || normalizedCity?.slice(0, 3).toUpperCase() || 'UNK';
-  };
-
+  /**
+   * Récupérer l'adresse depuis l'API Google Maps
+   * @param {number} lat
+   * @param {number} lon
+   * @returns {object|null}
+   */
   const fetchAddressFromGoogle = async (lat, lon) => {
     try {
       const response = await fetch(
@@ -126,7 +200,6 @@ export default function FormScreen() {
 
         const completeAddress = `${streetNumber} ${street}, ${city} ${postalCode}`;
 
-        // Retourner les valeurs nécessaires
         return {
           completeAddress,
           streetNumber,
@@ -144,35 +217,12 @@ export default function FormScreen() {
     }
   };
 
-  const normalizeAndSimplifyRue = (rue) => {
-    const excludedWords = [
-      'rue',
-      'avenue',
-      'boulevard',
-      'place',
-      'impasse',
-      'chemin',
-      'allée',
-      'le',
-      'la',
-      'les',
-      'de',
-      'du',
-      'des',
-      "l'",
-    ];
-    return rue
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase()
-      .split(' ')
-      .filter((word) => !excludedWords.includes(word))
-      .join('');
-  };
-
+  /**
+   * Générer la localisation et le nom de l'installation
+   */
   const generateLocationAndName = async () => {
     try {
-      // Vérifier si les permissions sont déjà accordées
+      // Demander les permissions de localisation
       let { status } = await Location.getForegroundPermissionsAsync();
       if (status !== 'granted') {
         const { status: newStatus } = await Location.requestForegroundPermissionsAsync();
@@ -199,25 +249,20 @@ export default function FormScreen() {
       if (!address || address === 'Adresse inconnue') {
         const addressData = await fetchAddressFromGoogle(coords.latitude, coords.longitude);
         if (addressData) {
-          const { completeAddress, streetNumber, street, city, postalCode } = addressData;
+          const { completeAddress, streetNumber, street, city } = addressData;
           setAddress(completeAddress);
           setNumeroRue(streetNumber);
           setRue(street);
           setVille(city);
 
-          // Utiliser ces variables directement
           currentRue = street;
           currentVille = city;
         } else {
           Alert.alert('Erreur', "Impossible de récupérer l'adresse.");
           return;
         }
-      } else {
-        currentRue = rue;
-        currentVille = ville;
       }
 
-      // Vérifier que la rue et la ville sont disponibles
       if (
         !currentRue ||
         !currentVille ||
@@ -239,7 +284,7 @@ export default function FormScreen() {
         date.getMonth() + 1
       ).padStart(2, '0')}${String(date.getFullYear()).slice(-2)}`;
 
-      // Utiliser une requête d'agrégation pour obtenir le compte
+      // Obtenir le nombre d'installations existantes
       const installationsRef = collection(db, 'decorations');
       const q = query(
         installationsRef,
@@ -265,6 +310,9 @@ export default function FormScreen() {
     }
   };
 
+  /**
+   * Enregistrer la photo et les informations dans Firestore
+   */
   const savePhoto = async () => {
     try {
       if (
@@ -306,6 +354,7 @@ export default function FormScreen() {
         return;
       }
 
+      // Enregistrer les données dans Firestore
       await addDoc(collection(db, 'decorations'), {
         installationID,
         imageUri: downloadURL,
@@ -333,154 +382,156 @@ export default function FormScreen() {
     }
   };
 
-  const handleNumeroRueUpdate = () => {
-    const updatedAddress = address.replace('Inconnu', numeroRue);
-    setAddress(updatedAddress);
-    setShowNumeroRueModal(false);
-  };
-
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={{ flex: 1 }}
     >
       <ScrollView
-        ref={scrollViewRef}
-        contentContainerStyle={[FormStyle.formContainer, { minHeight: height }]}
+        contentContainerStyle={[FormStyle.formContainer, { flexGrow: 1 }]}
+        keyboardShouldPersistTaps="handled"
       >
-        <Text style={FormStyle.title}>Informations Techniques</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={FormStyle.title}>Informations Techniques</Text>
 
-        <TextInput
-          style={FormStyle.input}
-          placeholder="Nom de l'installation"
-          value={installationName}
-          editable={false}
-          placeholderTextColor="#888"
-        />
+          {/* Champ Nom de l'installation */}
+          <TextInput
+            style={FormStyle.input}
+            placeholder="Nom de l'installation"
+            value={installationName}
+            editable={false}
+            placeholderTextColor="#888"
+          />
 
-        <TextInput
-          style={FormStyle.input}
-          placeholder="Adresse complète"
-          value={address}
-          editable={true}
-          onChangeText={setAddress}
-          placeholderTextColor="#888"
-        />
+          {/* Champ Adresse complète */}
+          <TextInput
+            style={FormStyle.input}
+            placeholder="Adresse complète"
+            value={address}
+            editable={true}
+            onChangeText={setAddress}
+            placeholderTextColor="#888"
+          />
 
-        <TouchableOpacity style={FormStyle.button} onPress={generateLocationAndName}>
-          <Text style={FormStyle.buttonText}>Générer</Text>
-        </TouchableOpacity>
+          {/* Bouton Générer */}
+          <TouchableOpacity style={FormStyle.button} onPress={generateLocationAndName}>
+            <Text style={FormStyle.buttonText}>Générer</Text>
+          </TouchableOpacity>
 
-        <Text style={FormStyle.pickerTitle}>Type de décorations</Text>
-        <TouchableOpacity
-          onPress={() => setShowTypePicker(!showTypePicker)}
-          style={FormStyle.pickerButton}
-        >
-          <Text>{installationType}</Text>
-        </TouchableOpacity>
-        {showTypePicker && (
-          <Picker
-            selectedValue={installationType}
-            onValueChange={(itemValue) => {
-              setInstallationType(itemValue);
-              setShowTypePicker(false);
-            }}
+          {/* Sélecteur Type de décorations */}
+          <Text style={FormStyle.pickerTitle}>Type de décorations</Text>
+          <TouchableOpacity
+            onPress={() => setShowTypePicker(!showTypePicker)}
+            style={FormStyle.pickerButton}
           >
-            <Picker.Item label="Motif Candélabre" value="Motif Candélabre" />
-            <Picker.Item label="Motif Traversée" value="Motif Traversée" />
-            <Picker.Item label="Guirlande Traversée" value="Guirlande Traversée" />
-            <Picker.Item label="Guirlande Arbre" value="Guirlande Arbre" />
-            <Picker.Item label="Structure" value="Structure" />
-            <Picker.Item label="Armoire" value="Armoire" />
-          </Picker>
-        )}
+            <Text>{installationType}</Text>
+          </TouchableOpacity>
+          {showTypePicker && (
+            <Picker
+              selectedValue={installationType}
+              onValueChange={(itemValue) => {
+                setInstallationType(itemValue);
+                setShowTypePicker(false);
+              }}
+            >
+              <Picker.Item label="Motif Candélabre" value="Motif Candélabre" />
+              <Picker.Item label="Motif Traversée" value="Motif Traversée" />
+              <Picker.Item label="Guirlande Traversée" value="Guirlande Traversée" />
+              <Picker.Item label="Guirlande Arbre" value="Guirlande Arbre" />
+              <Picker.Item label="Structure" value="Structure" />
+              <Picker.Item label="Armoire" value="Armoire" />
+            </Picker>
+          )}
 
-        <Text style={FormStyle.pickerTitle}>Statut d'installation</Text>
-        <TouchableOpacity
-          onPress={() => setShowStatusPicker(!showStatusPicker)}
-          style={FormStyle.pickerButton}
-        >
-          <Text>{installationStatus}</Text>
-        </TouchableOpacity>
-        {showStatusPicker && (
-          <Picker
-            selectedValue={installationStatus}
-            onValueChange={(itemValue) => {
-              setInstallationStatus(itemValue);
-              setShowStatusPicker(false);
-            }}
+          {/* Sélecteur Statut d'installation */}
+          <Text style={FormStyle.pickerTitle}>Statut d'installation</Text>
+          <TouchableOpacity
+            onPress={() => setShowStatusPicker(!showStatusPicker)}
+            style={FormStyle.pickerButton}
           >
-            <Picker.Item label="Installée" value="Installée" />
-            <Picker.Item label="Non installée" value="Non installée" />
-          </Picker>
-        )}
+            <Text>{installationStatus}</Text>
+          </TouchableOpacity>
+          {showStatusPicker && (
+            <Picker
+              selectedValue={installationStatus}
+              onValueChange={(itemValue) => {
+                setInstallationStatus(itemValue);
+                setShowStatusPicker(false);
+              }}
+            >
+              <Picker.Item label="Installée" value="Installée" />
+              <Picker.Item label="Non installée" value="Non installée" />
+            </Picker>
+          )}
 
-        <Text style={FormStyle.pickerTitle}>État de fonctionnement</Text>
-        <TouchableOpacity
-          onPress={() => setShowFunctionalityPicker(!showFunctionalityPicker)}
-          style={FormStyle.pickerButton}
-        >
-          <Text>{functionalityStatus}</Text>
-        </TouchableOpacity>
-        {showFunctionalityPicker && (
-          <Picker
-            selectedValue={functionalityStatus}
-            onValueChange={(itemValue) => {
-              setFunctionalityStatus(itemValue);
-              setShowFunctionalityPicker(false);
-            }}
+          {/* Sélecteur État de fonctionnement */}
+          <Text style={FormStyle.pickerTitle}>État de fonctionnement</Text>
+          <TouchableOpacity
+            onPress={() => setShowFunctionalityPicker(!showFunctionalityPicker)}
+            style={FormStyle.pickerButton}
           >
-            <Picker.Item label="Fonctionnelle" value="Fonctionnelle" />
-            <Picker.Item label="En panne" value="En panne" />
-          </Picker>
-        )}
+            <Text>{functionalityStatus}</Text>
+          </TouchableOpacity>
+          {showFunctionalityPicker && (
+            <Picker
+              selectedValue={functionalityStatus}
+              onValueChange={(itemValue) => {
+                setFunctionalityStatus(itemValue);
+                setShowFunctionalityPicker(false);
+              }}
+            >
+              <Picker.Item label="Fonctionnelle" value="Fonctionnelle" />
+              <Picker.Item label="En panne" value="En panne" />
+            </Picker>
+          )}
 
-        <Text style={FormStyle.pickerTitle}>Armoire</Text>
-        <TextInput
-          style={FormStyle.input}
-          placeholder="Numéro de l'armoire"
-          value={armoire}
-          onChangeText={setArmoire}
-          placeholderTextColor="#888"
-        />
+          {/* Champ Armoire */}
+          <Text style={FormStyle.pickerTitle}>Armoire</Text>
+          <TextInput
+            style={FormStyle.input}
+            placeholder="Numéro de l'armoire"
+            value={armoire}
+            onChangeText={handleArmoireChange}
+            placeholderTextColor="#888"
+          />
 
-        <TextInput
-          style={[FormStyle.input, { height: 90 }]}
-          placeholder="Ajouter un commentaire"
-          placeholderTextColor="#888"
-          value={comment}
-          onChangeText={setComment}
-          multiline
-        />
-
-        <TouchableOpacity
-          style={[FormStyle.button, FormStyle.saveButton]}
-          onPress={savePhoto}
-        >
-          <Text style={FormStyle.buttonText}>Enregistrer</Text>
-        </TouchableOpacity>
-
-        <Modal
-          transparent={true}
-          visible={showNumeroRueModal}
-          onRequestClose={() => setShowNumeroRueModal(false)}
-        >
-          <View style={FormStyle.modalContainer}>
-            <View style={FormStyle.modalContent}>
-              <Text style={FormStyle.modalTitle}>Entrez le numéro de rue</Text>
-              <TextInput
-                style={FormStyle.input}
-                placeholder="Numéro de rue"
-                value={numeroRue}
-                onChangeText={setNumeroRue}
-                keyboardType="numeric"
-              />
-              <TouchableOpacity style={FormStyle.modalButton} onPress={handleNumeroRueUpdate}>
-                <Text style={FormStyle.buttonText}>Valider</Text>
-              </TouchableOpacity>
+          {/* Suggestions d'armoires */}
+          {filteredArmoires.length > 0 && (
+            <View style={FormStyle.suggestionsContainer}>
+              {filteredArmoires.map((suggestion, index) => (
+                <TouchableOpacity
+                  key={index}
+                  onPress={() => {
+                    setArmoire(suggestion);
+                    setFilteredArmoires([]);
+                  }}
+                  style={FormStyle.suggestionItem}
+                >
+                  <Text style={FormStyle.suggestionText}>{suggestion}</Text>
+                </TouchableOpacity>
+              ))}
             </View>
-          </View>
-        </Modal>
+          )}
+
+          {/* Champ Informations */}
+          <Text style={FormStyle.pickerTitle}>Informations</Text>
+          <TextInput
+            style={[FormStyle.input, { height: 80 }]}
+            placeholder="Ajouter un commentaire"
+            placeholderTextColor="#888"
+            value={comment}
+            onChangeText={setComment}
+            multiline
+          />
+
+          {/* Bouton Enregistrer */}
+          <TouchableOpacity
+            style={[FormStyle.button, FormStyle.saveButton]}
+            onPress={savePhoto}
+          >
+            <Text style={FormStyle.buttonText}>Enregistrer</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );

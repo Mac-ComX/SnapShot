@@ -383,13 +383,18 @@ const MapStyle = StyleSheet.create({
     borderRadius: 1,
     marginVertical: 10,
   },
+  cardSousTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#888',
+    marginBottom: 0,
+  },
   
   // Styles pour le Card
   card: {
     backgroundColor: '#fff', // Blanc opaque
     borderRadius: 12,
     padding: 15,
-    marginBottom: 20,
     shadowColor: '#000',
     shadowOpacity: 0.05,
     shadowRadius: 5,
@@ -415,7 +420,7 @@ const MapStyle = StyleSheet.create({
   cardStreet: {
     margin:10,
     fontSize: 16,
-    color: '#7f8c8d',
+    color: '#1e90ff',
   },
 
   // Styles pour le graphique
@@ -481,19 +486,40 @@ const MapStyle = StyleSheet.create({
     flex: 1, // Remplacer position: 'absolute' par flex: 1
   },
 
-  // Styles pour les raccourcis interactifs
-  shortcutsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginVertical: 20,
+  shortcutContainer: {
+    width: '100%',
+    flexDirection: 'row', // Disposer les boutons horizontalement
+    justifyContent: 'space-around', // Espacer les boutons de manière égale
+    backgroundColor: '#fff', // Fond blanc comme dans l'image
+    padding: 20, // Espacement interne
+    borderRadius: 10, // Arrondir les coins du conteneur
+    shadowColor: '#000', // Ajouter une ombre légère
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 5, // Ombre pour Android
   },
-  shortcutButton: {
+  shortcut: {
+    alignItems: 'center', // Centrer le contenu du bouton (icône et texte)
+  },
+  iconWrapper: {
+    width: 60, // Taille des icônes
+    height: 60,
+    borderRadius: 30, // Circulaire
+    justifyContent: 'center', // Centrer l'icône dans le cercle
     alignItems: 'center',
+    marginBottom: 5, // Espacement entre l'icône et le texte
   },
-  shortcutLabel: {
-    marginTop: 5,
-    fontSize: 14,
-    color: '#34495e',
+  label: {
+    fontSize: 14, // Taille du texte principal
+    fontWeight: '700', // Texte en gras léger
+    textAlign: 'center',
+    color: '#7f8c8d', // Centrer le texte    
+  },
+  sublabel: {
+    fontSize: 12, // Taille du sous-texte
+    color: '#7f8c8d', // Couleur grisée du sous-texte
+    textAlign: 'center', // Centrer le sous-texte    
   },
 });
 
